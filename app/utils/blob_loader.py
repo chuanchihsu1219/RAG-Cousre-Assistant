@@ -1,20 +1,23 @@
-# app/utils/blob_loader.py
 import os
 from azure.storage.blob import BlobServiceClient
+import zipfile
 
 
-def download_chroma_from_blob(connection_string, container_name, blob_prefix="", local_dir):
-    os.makedirs(local_dir, exist_ok=True)
+def download_and_extract_chroma_data(container_name, blob_name, download_dir, connection_string):
+    os.makedirs(download_dir, exist_ok=True)
+    local_zip_path = os.path.join(download_dir, "course_vector.zip")
+
+    # 初始化 BlobServiceClient
     blob_service_client = BlobServiceClient.from_connection_string(connection_string)
-    container_client = blob_service_client.get_container_client(container_name)
+    blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
 
-    blobs = container_client.list_blobs(name_starts_with=blob_prefix)
-    for blob in blobs:
-        blob_name = blob.name
-        relative_path = blob_name.replace(blob_prefix, "", 1).lstrip("/")
-        local_path = os.path.join(local_dir, relative_path)
+    # 下載 ZIP 檔案
+    with open(local_zip_path, "wb") as f:
+        f.write(blob_client.download_blob().readall())
 
-        os.makedirs(os.path.dirname(local_path), exist_ok=True)
-        with open(local_path, "wb") as file:
-            blob_data = container_client.download_blob(blob_name)
-            file.write(blob_data.readall())
+    # 解壓縮到資料夾
+    with zipfile.ZipFile(local_zip_path, "r") as zip_ref:
+        zip_ref.extractall(download_dir)
+
+    # 刪除 zip
+    os.remove(local_zip_path)
