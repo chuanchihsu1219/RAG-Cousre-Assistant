@@ -16,7 +16,7 @@ def chat():
         schedule = session.get("schedule", [])  # 現在 schedule 仍然不作用，但可以日後整合 metadata
 
         # 呼叫 LangChain-based RAG 系統進行推薦
-        answer = recommend_course(user_input)
+        answer = recommend_course(user_input, schedule)
 
         # 儲存聊天紀錄
         supabase.table("chat_history").insert({

@@ -9,6 +9,15 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from pydantic import SecretStr
+from app.utils.blob_loader import download_chroma_from_blob
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# 從 Blob Storage 下載 embedding 資料夾
+download_chroma_from_blob(
+    connection_string=os.environ["AZURE_BLOB_CONNECTION_STRING"], container_name=os.environ["AZURE_BLOB_CONTAINER"], blob_prefix="", local_dir="./persist/chroma_data"
+)
 
 # 讀取環境變數
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
