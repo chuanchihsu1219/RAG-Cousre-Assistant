@@ -1,0 +1,19 @@
+<!-- templates/login.html -->
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2>登入</h2>
+    <form method="POST">
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email" required>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">密碼</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">登入</button>
+        <p class="mt-2">還沒有帳號？<a href="{{ url_for('auth.register') }}">前往註冊</a></p>
+    </form>
+</div>
+{% endblock %}

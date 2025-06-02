@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block title %}課程時間設定{% endblock %}
+
+{% block content %}
+<h3>設定你的課程時間</h3>
+<form method="POST">
+    <div class="row">
+        {% set weekdays = ['一','二','三','四','五','六','日'] %}
+        {% set periods = ['0','1','2','3','4','5','6','7','8','9','10','A','B','C','D'] %}
+        {% for i in range(7) %}
+            <div class="col-md-6 mb-3">
+                <strong>星期{{ weekdays[i] }}</strong><br>
+                {% for p in periods %}
+                    {% set value = i ~ '_' ~ p %}
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="timeslot" value="{{ value }}" id="{{ value }}"
+                        {% if value in selected_slots %}checked{% endif %}>
+                        <label class="form-check-label" for="{{ value }}">{{ p }}</label>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-success">儲存偏好</button>
+</form>
+{% endblock %}
