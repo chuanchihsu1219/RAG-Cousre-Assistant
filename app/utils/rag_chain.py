@@ -1,28 +1,33 @@
 # app/utils/rag_chain.py
 import os
 import re
+import markdown
 from app.utils.blob_loader import download_and_extract_chroma_data
-from langchain.vectorstores import Chroma
-from langchain.embeddings import OpenAIEmbeddings
-from langchain_openai import ChatOpenAI
+from langchain_chroma import Chroma  # ✅ 使用新版本 Chroma
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_core.output_parsers import StrOutputParser
 from pydantic import SecretStr
-import markdown
 
-# 設定
+# 環境設定
 BLOB_CONNECTION_STRING = os.environ["AZURE_BLOB_CONNECTION_STRING"]
 BLOB_CONTAINER_NAME = os.environ["AZURE_BLOB_CONTAINER"]
 BLOB_FILE_NAME = os.environ["BLOB_NAME"]
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CHROMA_LOCAL_DIR = os.path.abspath(os.path.join(BASE_DIR, "../../persist/chroma_data"))
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
 
-# 全域變數（延遲初始化）
+# 計算 Chroma 資料夾位置（同層 persist）
+# BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+# CHROMA_LOCAL_DIR = os.path.join(BASE_DIR, "persist", "chroma_data")
+
+CHROMA_LOCAL_DIR = "persist"
+
+# 全域變數
 vectordb = None
 qa_chain = None
+
+# Prompt 模板
 prompt = PromptTemplate.from_template(
     """
 你是個專業的課程顧問，會根據學生的需求從課程描述中推薦最適合的課。請使用 **標準 Markdown 語法與縮排** 回覆，勿在清單項目前後使用多餘縮排或空行，因為之後會再被渲染。
@@ -41,30 +46,29 @@ def initialize_vectordb():
     global vectordb, qa_chain
 
     if vectordb is not None:
-        return  # 已初始化過就跳過
+        return
 
-    # 若向量資料尚未下載與解壓，先處理
-    # if not os.path.exists(CHROMA_LOCAL_DIR):
-    download_and_extract_chroma_data(container_name=BLOB_CONTAINER_NAME, blob_name=BLOB_FILE_NAME, download_dir=CHROMA_LOCAL_DIR, connection_string=BLOB_CONNECTION_STRING)
+    if not os.path.exists(CHROMA_LOCAL_DIR):
+        download_and_extract_chroma_data(container_name=BLOB_CONTAINER_NAME, blob_name=BLOB_FILE_NAME, download_dir=CHROMA_LOCAL_DIR, connection_string=BLOB_CONNECTION_STRING)
 
     embedding = OpenAIEmbeddings(api_key=OPENAI_API_KEY)
     vectordb = Chroma(persist_directory=CHROMA_LOCAL_DIR, embedding_function=embedding)
     retriever = vectordb.as_retriever(search_kwargs={"k": 5})
 
-    # ✅ Debug：確認向量筆數
+    # Debug 向量筆數
     try:
-        print("📊 向量資料筆數：", len(vectordb.get()["documents"]), flush=True)
+        print("📊 向量資料筆數：", len(vectordb.get()["documents"]))
     except Exception as e:
-        print("❌ 向量讀取失敗：", e, flush=True)
+        print("❌ 向量讀取失敗：", e)
 
     llm = ChatOpenAI(model=OPENAI_MODEL, api_key=SecretStr(OPENAI_API_KEY), temperature=0.3)
     qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever, return_source_documents=True, chain_type_kwargs={"prompt": prompt})
 
 
 def clean_markdown(text: str) -> str:
-    text = re.sub(r"\n\s*\n+", "\n", text)
-    text = re.sub(r"\n[ ]+(?=- )", "\n- ", text)
-    text = re.sub(r"(- [^\n]+)\n(?!- )", r"\1 ", text)
+    # text = re.sub(r"\n\s*\n+", "\n", text)
+    # text = re.sub(r"\n[ ]+(?=- )", "\n- ", text)
+    # text = re.sub(r"(- [^\n]+)\n(?!- )", r"\1 ", text)
     return text.strip()
 
 
@@ -75,7 +79,7 @@ def recommend_course(question, schedule):
     print("✅ 使用者問題：", question)
     print("✅ 使用者時段（schedule）:", schedule)
 
-    # Step 1：初步相似度檢索
+    # 初步檢索
     raw_docs = vectordb.similarity_search(question, k=15)
     print(f"🔍 初步相似課程數量：{len(raw_docs)}")
 
@@ -86,9 +90,7 @@ def recommend_course(question, schedule):
         metadata = doc.metadata
         print(f"\n📘 課程 {i+1} metadata:", metadata)
 
-        time_slots_str = metadata.get("time_slots", "")
-        course_slots = time_slots_str.split(",") if time_slots_str else []
-
+        course_slots = metadata.get("time_slots", "").split(",") if metadata.get("time_slots") else []
         print("🕒 課程時段：", course_slots)
         print("📋 是否符合使用者時段？", set(course_slots).issubset(user_set))
 
@@ -104,12 +106,10 @@ def recommend_course(question, schedule):
     filled_prompt = prompt.format(question=question, context=context)
 
     result = qa_chain.invoke(filled_prompt)
-    print("🧪 LLM raw result:", result)
-
     raw_output = result.get("result", "")
     cleaned = clean_markdown(raw_output)
 
-    print("🧪 result.content (initial):", repr(result.content))
+    print("🧪 result.content (initial):", repr(raw_output))
     print("🧪 result.content (cleaned):", repr(cleaned))
 
     return cleaned
