@@ -104,7 +104,10 @@ def recommend_course(question, schedule):
     filled_prompt = prompt.format(question=question, context=context)
 
     result = qa_chain.invoke(filled_prompt)
-    cleaned = clean_markdown(result.content)
+    print("🧪 LLM raw result:", result)
+
+    raw_output = result.get("result", "")
+    cleaned = clean_markdown(raw_output)
 
     print("🧪 result.content (initial):", repr(result.content))
     print("🧪 result.content (cleaned):", repr(cleaned))
