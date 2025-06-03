@@ -44,8 +44,8 @@ def initialize_vectordb():
         return  # 已初始化過就跳過
 
     # 若向量資料尚未下載與解壓，先處理
-    if not os.path.exists(CHROMA_LOCAL_DIR):
-        download_and_extract_chroma_data(container_name=BLOB_CONTAINER_NAME, blob_name=BLOB_FILE_NAME, download_dir=CHROMA_LOCAL_DIR, connection_string=BLOB_CONNECTION_STRING)
+    # if not os.path.exists(CHROMA_LOCAL_DIR):
+    download_and_extract_chroma_data(container_name=BLOB_CONTAINER_NAME, blob_name=BLOB_FILE_NAME, download_dir=CHROMA_LOCAL_DIR, connection_string=BLOB_CONNECTION_STRING)
 
     embedding = OpenAIEmbeddings(api_key=OPENAI_API_KEY)
     vectordb = Chroma(persist_directory=CHROMA_LOCAL_DIR, embedding_function=embedding)
