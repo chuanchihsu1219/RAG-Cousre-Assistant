@@ -103,7 +103,7 @@ def recommend_course(question, schedule):
     context = "\n\n".join(doc.page_content for doc in filtered_docs[:5])
     filled_prompt = prompt.format(question=question, context=context)
 
-    result = qa_chain.llm.invoke(filled_prompt)
+    result = qa_chain.invoke(filled_prompt)
     cleaned = clean_markdown(result.content)
 
     print("🧪 result.content (initial):", repr(result.content))
