@@ -1,5 +1,7 @@
 # RAG-Based NTU Course Assistant
 
+[![Deploy on Zeabur](https://zeabur.com/button.svg)](https://rag-course-ai.zeabur.app/)
+
 A full-stack educational assistant system based on **Retrieval-Augmented Generation (RAG)** architecture, designed to provide intelligent, personalized course recommendations for National Taiwan University (NTU) students. This project demonstrates practical integration of LLM-based semantic search, Azure cloud storage, and full-stack web development.
 
 ---
