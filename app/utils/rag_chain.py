@@ -15,7 +15,8 @@ import markdown
 BLOB_CONNECTION_STRING = os.environ["AZURE_BLOB_CONNECTION_STRING"]
 BLOB_CONTAINER_NAME = os.environ["AZURE_BLOB_CONTAINER"]
 BLOB_FILE_NAME = os.environ["BLOB_NAME"]
-CHROMA_LOCAL_DIR = "./persist/chroma_data"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CHROMA_LOCAL_DIR = os.path.abspath(os.path.join(BASE_DIR, "../../persist/chroma_data"))
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
 
