@@ -13,8 +13,8 @@ import markdown
 
 # 設定
 BLOB_CONNECTION_STRING = os.environ["AZURE_BLOB_CONNECTION_STRING"]
-BLOB_CONTAINER_NAME = "your-container-name"
-BLOB_FILE_NAME = "course_vector.zip"
+BLOB_CONTAINER_NAME = os.environ["AZURE_BLOB_CONTAINER"]
+BLOB_FILE_NAME = os.environ["BLOB_NAME"]
 CHROMA_LOCAL_DIR = "./persist/chroma_data"
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
