@@ -3,7 +3,7 @@ from flask import Flask, redirect, url_for
 from app.routes.chat import chat_bp
 from app.routes.auth import auth_bp
 from app.routes.schedule import schedule_bp
-from app.utils.rag_chain import initialize_vectordb
+from app.utils.rag_chain import initialize_vectordb, recommend_course
 
 app = Flask(__name__, template_folder="app/templates")
 app.secret_key = "your_secret"
@@ -18,6 +18,13 @@ initialize_vectordb()
 @app.route("/")
 def index():
     return redirect(url_for("auth.login"))
+
+
+@app.route("/ping")
+def ping():
+    print("📥 Ping 被呼叫，測試向量庫")
+    recommend_course("英文", ["2_2", "2_3", "2_4"])
+    return "OK"
 
 
 if __name__ == "__main__":
