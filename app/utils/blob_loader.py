@@ -21,3 +21,11 @@ def download_and_extract_chroma_data(container_name, blob_name, download_dir, co
 
     # 刪除 zip
     os.remove(local_zip_path)
+
+    print("📂 解壓後檔案檢查：")
+    for root, dirs, files in os.walk(download_dir):
+        print(f"📁 {root}")
+        for f in files:
+            fp = os.path.join(root, f)
+            size = os.path.getsize(fp)
+            print(f"   - {f} ({size / 1024:.1f} KB)")
