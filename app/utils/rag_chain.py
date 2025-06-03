@@ -50,6 +50,12 @@ def initialize_vectordb():
     vectordb = Chroma(persist_directory=CHROMA_LOCAL_DIR, embedding_function=embedding)
     retriever = vectordb.as_retriever(search_kwargs={"k": 5})
 
+    # ✅ Debug：確認向量筆數
+    try:
+        print("📊 向量資料筆數：", len(vectordb.get()["documents"]))
+    except Exception as e:
+        print("❌ 向量讀取失敗：", e)
+
     llm = ChatOpenAI(model=OPENAI_MODEL, api_key=SecretStr(OPENAI_API_KEY), temperature=0.3)
     qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever, return_source_documents=True, chain_type_kwargs={"prompt": prompt})
 
@@ -65,15 +71,30 @@ def recommend_course(question, schedule):
     if vectordb is None or qa_chain is None:
         raise RuntimeError("請先呼叫 initialize_vectordb() 初始化向量資料庫。")
 
-    raw_docs = vectordb.similarity_search(question, k=15)
-    user_set = set(schedule)
+    print("✅ 使用者問題：", question)
+    print("✅ 使用者時段（schedule）:", schedule)
 
+    # Step 1：初步相似度檢索
+    raw_docs = vectordb.similarity_search(question, k=15)
+    print(f"🔍 初步相似課程數量：{len(raw_docs)}")
+
+    user_set = set(schedule)
     filtered_docs = []
-    for doc in raw_docs:
-        time_slots_str = doc.metadata.get("time_slots", "")
+
+    for i, doc in enumerate(raw_docs):
+        metadata = doc.metadata
+        print(f"\n📘 課程 {i+1} metadata:", metadata)
+
+        time_slots_str = metadata.get("time_slots", "")
         course_slots = time_slots_str.split(",") if time_slots_str else []
+
+        print("🕒 課程時段：", course_slots)
+        print("📋 是否符合使用者時段？", set(course_slots).issubset(user_set))
+
         if set(course_slots).issubset(user_set):
             filtered_docs.append(doc)
+
+    print(f"\n✅ 通過時段過濾的課程數量：{len(filtered_docs)}")
 
     if not filtered_docs:
         return "找不到符合您時段的課程，請嘗試調整時間或提問內容。"
@@ -86,4 +107,5 @@ def recommend_course(question, schedule):
 
     print("🧪 result.content (initial):", repr(result.content))
     print("🧪 result.content (cleaned):", repr(cleaned))
+
     return cleaned
