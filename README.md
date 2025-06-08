@@ -84,7 +84,7 @@ Welcome to sign up and try!
 │   └── templates/     # HTML & Markdown rendering
 ├── persist/           # Local chroma index fallback
 ├── requirements.txt   # Python dependency definitions
-└── run.py             # App entrypoint
+└── main.py             # App entrypoint
 ```
 
 ---
