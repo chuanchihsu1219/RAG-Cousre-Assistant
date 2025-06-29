@@ -13,5 +13,5 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 啟動 Flask app，用 gunicorn
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "-b", "0.0.0.0:8080", "main:app"]
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-w", "1", "-b", "0.0.0.0:8080", "main:app"]
 
