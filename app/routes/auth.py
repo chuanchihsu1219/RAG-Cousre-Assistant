@@ -1,6 +1,7 @@
 # app/routes/auth.py
-from fastapi import APIRouter, Form, Depends, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Form, Depends, HTTPException, status, Request
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
@@ -8,6 +9,7 @@ from passlib.context import CryptContext
 import uuid
 from config import supabase
 
+templates = Jinja2Templates(directory="app/templates")
 router = APIRouter()
 
 # 加密 & JWT 設定
@@ -68,3 +70,12 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
         return str(user_id)
     except JWTError:
         raise HTTPException(status_code=401, detail="token 驗證失敗")
+
+
+@router.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@router.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
