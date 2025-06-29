@@ -296,9 +296,27 @@
                     const index = script.id.replace("md-", "");
                     const container = document.getElementById("rendered-" + index);
                     try {
-                        let raw = JSON.parse(script.textContent.trim());
-                        container.innerHTML = md.render(raw.trim());
+                        // 去除開頭和結尾的引號（如果存在）
+                        let raw = script.textContent.trim();
+                        
+                        try {
+                            // 嘗試解析 JSON
+                            let content = JSON.parse(raw);
+                            
+                            // 如果解析成功，使用解析後的內容
+                            if (typeof content === 'string') {
+                                container.innerHTML = md.render(content);
+                            } else {
+                                console.log("解析的JSON不是字符串:", content);
+                                container.innerHTML = md.render(String(content));
+                            }
+                        } catch (jsonErr) {
+                            // 如果 JSON 解析失敗，直接使用原始內容
+                            console.log("JSON解析失敗，直接使用原始內容:", raw);
+                            container.innerHTML = md.render(raw);
+                        }
                     } catch (e) {
+                        console.error("渲染失敗:", e, "原始內容:", script.textContent);
                         container.innerHTML = `<pre style="color:red;">❗ 渲染失敗：${e.message}</pre>`;
                     }
                 });
@@ -364,6 +382,10 @@
                 .then(data => {
                     aiThinking.style.display = "none";
                     const botIndex = document.querySelectorAll(".chat-entry").length + 1;
+                    // 調試輸出
+                    console.log("收到的回覆類型:", typeof data.answer, "內容:", data.answer);
+                    
+                    // 直接使用原始回覆，不進行 JSON 序列化
                     chatContainer.insertAdjacentHTML("beforeend", `
                         <div class="chat-entry">
                             <div class="d-flex justify-content-start">
@@ -372,7 +394,7 @@
                                 </div>
                             </div>
                             <script type="application/json" id="md-${botIndex}">
-                                ${JSON.stringify(data.answer)}
+                                ${data.answer}
                             </script>
                         </div>
                     `);
