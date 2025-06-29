@@ -55,10 +55,10 @@ def initialize_vectordb():
 
     # Debug 向量筆數
     try:
-        print("📊 向量資料筆數：", len(vectordb.get()["documents"]))
-        print("✅ 向量資料庫初始化完成！")
+        print("📊 向量資料筆數：", len(vectordb.get()["documents"]), flush=True)
+        print("✅ 向量資料庫初始化完成！", flush=True)
     except Exception as e:
-        print("❌ 向量讀取失敗：", e)
+        print("❌ 向量讀取失敗：", e, flush=True)
 
     llm = ChatOpenAI(model=OPENAI_MODEL, api_key=SecretStr(OPENAI_API_KEY), temperature=0.3)
     qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever, return_source_documents=True, chain_type_kwargs={"prompt": prompt})

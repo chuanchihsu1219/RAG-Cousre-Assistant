@@ -5,7 +5,7 @@ import zipfile
 
 def download_and_extract_chroma_data(container_name, blob_name, download_dir, connection_string):
     try:
-        print("🔽 開始下載 blob 並解壓縮...")
+        print("🔽 開始下載 blob 並解壓縮...", flush=True)
 
         os.makedirs(download_dir, exist_ok=True)
         local_zip_path = os.path.join(download_dir, "course_vector.zip")
@@ -17,25 +17,25 @@ def download_and_extract_chroma_data(container_name, blob_name, download_dir, co
         # 下載 ZIP 檔案
         with open(local_zip_path, "wb") as f:
             f.write(blob_client.download_blob().readall())
-        print("✅ ZIP 下載成功！")
+        print("✅ ZIP 下載成功！", flush=True)
 
         # 解壓縮
         with zipfile.ZipFile(local_zip_path, "r") as zip_ref:
             zip_ref.extractall(download_dir)
-        print("✅ 解壓完成！")
+        print("✅ 解壓完成！", flush=True)
 
         # 刪除 zip
         os.remove(local_zip_path)
-        print("🗑️ zip 刪除完成")
+        print("🗑️ zip 刪除完成", flush=True)
 
         # 檢查資料夾內容
-        print("📂 解壓後檔案檢查：")
+        print("📂 解壓後檔案檢查：", flush=True)
         for root, dirs, files in os.walk(download_dir):
             print(f"📁 {root}")
             for f in files:
                 fp = os.path.join(root, f)
                 size = os.path.getsize(fp)
-                print(f"   - {f} ({size / 1024:.1f} KB)")
+                print(f"   - {f} ({size / 1024:.1f} KB)", flush=True)
 
     except Exception as e:
         print("❌ 下載或解壓失敗：", e)
