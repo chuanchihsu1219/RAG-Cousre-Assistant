@@ -60,10 +60,11 @@ def initialize_vectordb():
 
     print("🔄 初始化向量資料庫...", flush=True)
     _initialized = True
-    list_collections("persist")  # 可保留做 sanity check
+    # list_collections("persist")  # 可保留做 sanity check
 
-    if not os.path.exists(CHROMA_LOCAL_DIR):
-        download_and_extract_chroma_data(container_name=BLOB_CONTAINER_NAME, blob_name=BLOB_FILE_NAME, download_dir=CHROMA_LOCAL_DIR, connection_string=BLOB_CONNECTION_STRING)
+    if  os.path.exists(CHROMA_LOCAL_DIR):
+        os.remove(CHROMA_LOCAL_DIR)
+    download_and_extract_chroma_data(container_name=BLOB_CONTAINER_NAME, blob_name=BLOB_FILE_NAME, download_dir=CHROMA_LOCAL_DIR, connection_string=BLOB_CONNECTION_STRING)
 
     embedding = OpenAIEmbeddings(api_key=SecretStr(OPENAI_API_KEY))
     vectordb = Chroma(
