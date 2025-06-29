@@ -8,134 +8,330 @@
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/anandzhang/markdown-css/css/markdown.css" />
         <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
         <style>
-            body {
+            body, html {
+                margin: 0;
+                padding: 0;
+                height: 100vh;
+                overflow: hidden;
                 background-color: #f8f9fa;
             }
-            .container {
-                margin-top: 30px;
+            .chat-layout {
+                display: flex;
+                height: 100vh;
+                width: 100%;
+                overflow: hidden;
+            }
+            .sidebar {
+                width: 300px;
+                background-color: #ffffff;
+                border-right: 1px solid #e0e0e0;
+                height: 100%;
+                overflow-y: auto;
+                padding: 20px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            }
+            .chat-section {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                overflow: hidden;
             }
             .chat-box {
-                max-height: 600px;
+                flex: 1;
                 overflow-y: auto;
-                background: #fff;
-                padding: 15px;
-                border-radius: 8px;
-                border: 1px solid #dee2e6;
+                padding: 20px;
+                background-color: #fff;
+            }
+            .input-area {
+                padding: 15px 20px;
+                background-color: #fff;
+                border-top: 1px solid #e0e0e0;
+                display: flex;
+                align-items: center;
             }
             .chat-entry {
-                margin-bottom: 15px;
+                margin-bottom: 20px;
             }
-            .chat-user {
-                font-weight: bold;
-                color: #0d6efd;
-            }
-            .chat-bot {
-                font-weight: bold;
-                color: #198754;
+            .user-reply {
+                background-color: #0d6efd;
+                color: white;
+                border-radius: 18px;
+                padding: 12px 18px;
+                max-width: 75%;
+                word-wrap: break-word;
+                margin-left: auto;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
             }
             .bot-reply {
-                padding: 1rem;
-                border-radius: 0.5rem;
                 background-color: #f5f5f5;
+                border-radius: 18px;
+                padding: 12px 18px;
+                max-width: 75%;
+                word-wrap: break-word;
+                margin-right: auto;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
             }
             .markdown-body-light {
                 background-color: transparent;
                 color: inherit;
                 font-size: 0.95rem;
-                line-height: 1.4;
-            }
-            .timeslot-box {
-                background: #fff;
-                padding: 15px;
-                border-radius: 8px;
-                border: 1px solid #dee2e6;
-                max-height: 600px;
-                overflow-y: auto;
+                line-height: 1.5;
             }
             .form-check-label {
                 margin-right: 10px;
             }
-            .user-reply {
+            .nav-top {
+                padding: 15px;
+                background-color: #fff;
+                border-bottom: 1px solid #e0e0e0;
+                text-align: center;
+                font-weight: bold;
+                font-size: 1.2rem;
+            }
+            textarea.form-control {
+                border-radius: 20px;
+                padding: 10px 15px;
+                resize: none;
+                border: 1px solid #ccc;
+                flex: 1;
+            }
+            .send-btn {
                 background-color: #0d6efd;
+                border: none;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                margin-left: 10px;
                 color: white;
-                border-radius: 1rem;
-                padding: 0.75rem 1rem;
-                word-wrap: break-word;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.2s;
             }
-
-            .bot-reply {
-                background-color: #f5f5f5;
-                border-radius: 1rem;
-                padding: 0.75rem 1rem;
-                max-width: 75%;
-                word-wrap: break-word;
+            .send-btn:hover {
+                background-color: #0b5ed7;
             }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <form method="POST" action="/chat" id="chat-form">
-                <div class="row">
-                    <!-- 左：時間選擇 -->
-                    <div class="col-md-4">
-                        <div class="timeslot-box">
-                            <h5>選擇課堂時間</h5>
-                            <div class="row">
-                                {% set weekdays = ['日','一','二','三','四','五','六','日'] %} {% set periods = ['0','1','2','3','4','5','6','7','8','9','10','A','B','C','D'] %} {% for i in range(1,8)
-                                %}
-                                <div class="col-12 mb-2">
-                                    <strong>星期{{ weekdays[i] }}</strong><br />
-                                    {% for p in periods %}
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="checkbox" name="timeslot" value="{{ i }}_{{ p }}" id="{{ i }}_{{ p }}" {% if i ~ '_' ~ p in selected_slots %}checked{%
-                                        endif %}>
-                                        <label class="form-check-label" for="{{ i }}_{{ p }}">{{ p }}</label>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                {% endfor %}
-                            </div>
-                            <div id="loading" style="display: none" class="text-center mt-3">⏳ 載入中，請稍候...</div>
-                        </div>
-                    </div>
-
-                    <!-- 右：聊天區 -->
-                    <div class="col-md-8">
-                        <div class="chat-box mb-3" id="chat-container">
-                            {% for chat in chat_history %}
-                            <div class="chat-entry">
-                                {% if chat.user %}
-                                <!-- 使用者輸入（右邊對齊） -->
-                                <div class="d-flex justify-content-end">
-                                    <div class="user-reply text-white bg-primary p-2 rounded mb-1" style="max-width: 75%">{{ chat.user }}</div>
-                                </div>
-                                {% endif %}
-
-                                <!-- AI 回覆（左邊對齊） -->
-                                <div class="d-flex justify-content-start">
-                                    <div class="bot-reply markdown-body-light" id="rendered-{{ loop.index }}"></div>
-                                </div>
-
-                                <script type="application/json" id="md-{{ loop.index }}">
-                                    {{ chat.bot | tojson | safe }}
-                                </script>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        <div>
-                            <div class="mb-3">
-                                <textarea class="form-control" id="user-input" name="user_input" rows="2" placeholder="輸入你的問題..."></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary" id="submit-btn">送出</button>
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </div>
-
+            .send-btn:disabled {
+                background-color: #6c757d;
+                cursor: not-allowed;
+            }
+            .dot-flashing {
+                position: relative;
+                width: 10px;
+                height: 10px;
+                border-radius: 5px;
+                background-color: #9880ff;
+                color: #9880ff;
+                animation: dot-flashing 1s infinite linear alternate;
+                animation-delay: 0.5s;
+                margin: 0 5px;
+            }
+            .dot-flashing::before, .dot-flashing::after {
+                content: '';
+                display: inline-block;
+                position: absolute;
+                top: 0;
         <script>
             document.addEventListener("DOMContentLoaded", function () {
                 // 滾動到底
+                const chatBox = document.querySelector(".chat-box");
+                const scrollBtn = document.getElementById("scroll-to-bottom");
+                const aiThinking = document.getElementById("ai-thinking");
+                
+                scrollToBottom();
+
+                // 監聽滾動事件來顯示或隱藏滾動按鈕
+                chatBox.addEventListener("scroll", function() {
+                    const isNearBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 100;
+                    scrollBtn.style.display = isNearBottom ? "none" : "flex";
+                });
+
+                // 點擊滾動按鈕
+                scrollBtn.addEventListener("click", scrollToBottom);
+
+                function scrollToBottom() {
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+
+                // 初始化 markdown-it
+                const md = window.markdownit({ 
+                    breaks: true,
+                    linkify: true,
+                    typographer: true 
+                });
+
+                // 渲染現有的 markdown
+                function renderMarkdown() {
+                    document.querySelectorAll("script[type='application/json']").forEach((script) => {
+                        const index = script.id.replace("md-", "");
+                        const container = document.getElementById("rendered-" + index);
+                        try {
+                            let raw = JSON.parse(script.textContent.trim());
+                            if (typeof raw === "string") raw = raw.trim();
+                            container.innerHTML = md.render(raw);
+                        } catch (e) {
+                            container.innerHTML = `<pre style="color: red;">❗ 渲染失敗：${e.message}</pre>`;
+                        }
+                    });
+                }
+
+                // 初始渲染
+                renderMarkdown();
+
+                // 自動儲存時間選擇
+                const checkboxes = document.querySelectorAll('input[type="checkbox"][name="timeslot"]');
+                const submitBtn = document.getElementById("submit-btn");
+                const userInput = document.getElementById("user-input");
+                const chatContainer = document.getElementById("chat-container");
+                const hiddenInput = document.getElementById("hidden-input");
+                const chatForm = document.getElementById("chat-form");
+
+                // 自動調整文本域高度
+                userInput.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    const newHeight = Math.min(this.scrollHeight, 150);
+                    this.style.height = newHeight + 'px';
+                });
+
+                checkboxes.forEach((cb) => {
+                    cb.addEventListener("change", function () {
+                        const selected = Array.from(checkboxes)
+                            .filter((c) => c.checked)
+                            .map((c) => c.value);
+
+                        fetch("/save_schedule", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ slots: selected }),
+                        })
+                            .then((res) => res.json())
+                            .then((data) => {
+                                console.log("✅ 排程已更新");
+                            })
+                            .catch(() => {
+                                alert("❌ 儲存失敗，請稍後再試");
+                            });
+                    });
+                });
+
+                // 聊天提交處理
+                submitBtn.addEventListener("click", function(e) {
+                    const message = userInput.value.trim();
+                    if (!message) return;
+                    
+                    sendMessage(message);
+                });
+
+                // 按 Enter 鍵提交
+                userInput.addEventListener("keydown", function (e) {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        const message = userInput.value.trim();
+                        if (message) {
+                            sendMessage(message);
+                        }
+                    }
+                });
+
+                function sendMessage(message) {
+                    // 禁用按鈕
+                    submitBtn.disabled = true;
+                    
+                    // 新增使用者訊息到聊天框
+                    const userMessageHtml = `
+                        <div class="chat-entry">
+                            <div class="d-flex justify-content-end">
+                                <div class="user-reply">${escapeHtml(message)}</div>
+                            </div>
+                        </div>
+                    `;
+                    chatContainer.insertAdjacentHTML("beforeend", userMessageHtml);
+                    
+                    // 顯示AI思考動畫
+                    aiThinking.style.display = "block";
+                    
+                    // 滾動到底部
+                    scrollToBottom();
+                    
+                    // 清空輸入框並重設高度
+                    userInput.value = "";
+                    userInput.style.height = 'auto';
+
+                    // 獲取已選擇的時段
+                    const selected = Array.from(checkboxes)
+                        .filter((c) => c.checked)
+                        .map((c) => c.value);
+
+                    // 使用 AJAX 發送請求
+                    fetch("/chat", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            user_input: message,
+                            slots: selected,
+                        }),
+                    })
+                        .then((res) => res.json())
+                        .then((data) => {
+                            // 隱藏AI思考動畫
+                            aiThinking.style.display = "none";
+
+                            // 創建機器人回覆元素
+                            const botIndex = document.querySelectorAll(".chat-entry").length + 1;
+                            const botReplyHtml = `
+                                <div class="chat-entry">
+                                    <div class="d-flex justify-content-start">
+                                        <div class="bot-reply markdown-body-light" id="rendered-${botIndex}"></div>
+                                    </div>
+                                    <script type="application/json" id="md-${botIndex}">${JSON.stringify(data.answer)}<\/script>
+                                </div>
+                            `;
+
+                            // 添加到聊天容器
+                            chatContainer.insertAdjacentHTML("beforeend", botReplyHtml);
+
+                            // 重新渲染 markdown
+                            renderMarkdown();
+
+                            // 滾動到底部
+                            scrollToBottom();
+                        })
+                        .catch((err) => {
+                            console.error("聊天錯誤:", err);
+                            aiThinking.style.display = "none";
+                            
+                            // 顯示錯誤訊息
+                            const errorHtml = `
+                                <div class="chat-entry">
+                                    <div class="d-flex justify-content-start">
+                                        <div class="bot-reply markdown-body-light" style="color: #dc3545;">
+                                            ❌ 發送失敗，請稍後再試
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            chatContainer.insertAdjacentHTML("beforeend", errorHtml);
+
+                            // 如果需要，可以嘗試傳統表單提交
+                            // hiddenInput.value = message;
+                            // chatForm.submit();
+                        })
+                        .finally(() => {
+                            // 重新啟用按鈕
+                            submitBtn.disabled = false;
+                        });
+                }
+
+                // HTML 轉義函數
+                function escapeHtml(unsafe) {
+                    return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+                }
+            });
+        </script>
+    </body>
+</html>         // 滾動到底
                 const chatBox = document.querySelector(".chat-box");
                 if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
 
