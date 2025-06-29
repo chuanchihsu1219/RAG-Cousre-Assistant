@@ -1,6 +1,6 @@
 # app/routes/auth.py
 from fastapi import APIRouter, Form, Depends, HTTPException, status, Request
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -13,7 +13,7 @@ templates = Jinja2Templates(directory="app/templates")
 router = APIRouter()
 
 # 加密 & JWT 設定
-SECRET_KEY = "your_secret_key" #Todo
+SECRET_KEY = "your_secret_key"  # Todo
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 天
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -37,7 +37,12 @@ def register(email: str = Form(...), password: str = Form(...)):
     supabase.table("users").insert({"id": user_id, "email": email, "password_hash": hashed_pw}).execute()
 
     access_token = create_access_token(data={"sub": user_id})
-    return JSONResponse({"access_token": access_token, "token_type": "bearer"})
+
+    # 設置 cookie 和重定向到聊天頁面
+    response = RedirectResponse(url="/chat", status_code=303)
+    response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
+
+    return response
 
 
 @router.post("/login")
@@ -50,11 +55,23 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(status_code=400, detail="帳號不存在")
 
     user = user_data[0]
-    if not pwd_context.verify(password, user["password_hash"]):
-        raise HTTPException(status_code=400, detail="密碼錯誤")
+
+    try:
+        if not pwd_context.verify(password, user["password_hash"]):
+            raise HTTPException(status_code=400, detail="密碼錯誤")
+    except Exception as e:
+        # 處理 UnknownHashError 和其他可能的錯誤
+        print(f"密碼驗證錯誤: {str(e)}")
+        raise HTTPException(status_code=400, detail="密碼驗證失敗，請聯絡管理員")
 
     access_token = create_access_token(data={"sub": user["id"]})
-    return JSONResponse({"access_token": access_token, "token_type": "bearer"})
+
+    # 修改為重定向到聊天頁面
+    response = RedirectResponse(url="/chat", status_code=303)
+    response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
+
+    return response
+
 
 from fastapi.security import OAuth2PasswordBearer
 
@@ -72,10 +89,11 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
         raise HTTPException(status_code=401, detail="token 驗證失敗")
 
 
-@router.get("/login", response_class=HTMLResponse)
+@router.get("/login", response_class=HTMLResponse, name="login")
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
-@router.get("/register", response_class=HTMLResponse)
+
+@router.get("/register", response_class=HTMLResponse, name="register")
 async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
