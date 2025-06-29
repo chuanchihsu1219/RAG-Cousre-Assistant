@@ -1,410 +1,483 @@
 <!-- app/templates/chat.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8" />
-    <title>AI 課程推薦系統</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/anandzhang/markdown-css/css/markdown.css" />
-    <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            overflow: hidden;
-            background-color: #f8f9fa;
-        }
-        .chat-layout {
-            display: flex;
-            height: 100vh;
-            width: 100%;
-            overflow: hidden;
-        }
-        .sidebar {
-            width: 300px;
-            background-color: #ffffff;
-            border-right: 1px solid #e0e0e0;
-            height: 100%;
-            overflow-y: auto;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.05);
-        }
-        .chat-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            overflow: hidden;
-        }
-        .chat-box {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            background-color: #fff;
-        }
-        .input-area {
-            padding: 15px 20px;
-            background-color: #fff;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            align-items: center;
-        }
-        .chat-entry {
-            margin-bottom: 20px;
-        }
-        .user-reply {
-            background-color: #0d6efd;
-            color: white;
-            border-radius: 18px;
-            padding: 12px 18px;
-            max-width: 75%;
-            word-wrap: break-word;
-            margin-left: auto;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-        .bot-reply {
-            background-color: #f5f5f5;
-            border-radius: 18px;
-            padding: 12px 18px;
-            max-width: 75%;
-            word-wrap: break-word;
-            margin-right: auto;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-        .markdown-body-light {
-            background-color: transparent;
-            color: inherit;
-            font-size: 0.95rem;
-            line-height: 1.5;
-        }
-        .form-check-label {
-            margin-right: 10px;
-        }
-        .nav-top {
-            padding: 15px;
-            background-color: #fff;
-            border-bottom: 1px solid #e0e0e0;
-            text-align: center;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-        textarea.form-control {
-            border-radius: 20px;
-            padding: 10px 15px;
-            resize: none;
-            border: 1px solid #ccc;
-            flex: 1;
-        }
-        .send-btn {
-            background-color: #0d6efd;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            margin-left: 10px;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .send-btn:hover {
-            background-color: #0b5ed7;
-        }
-        .send-btn:disabled {
-            background-color: #6c757d;
-            cursor: not-allowed;
-        }
-        .dot-flashing {
-            position: relative;
-            width: 10px;
-            height: 10px;
-            border-radius: 5px;
-            background-color: #9880ff;
-            color: #9880ff;
-            animation: dot-flashing 1s infinite linear alternate;
-            animation-delay: 0.5s;
-            margin: 0 5px;
-        }
-        .dot-flashing::before, .dot-flashing::after {
-            content: '';
-            display: inline-block;
-            position: absolute;
-            top: 0;
-        }
-        .dot-flashing::before {
-            left: -15px;
-            width: 10px;
-            height: 10px;
-            border-radius: 5px;
-            background-color: #9880ff;
-            color: #9880ff;
-            animation: dot-flashing 1s infinite alternate;
-            animation-delay: 0s;
-        }
-        .dot-flashing::after {
-            left: 15px;
-            width: 10px;
-            height: 10px;
-            border-radius: 5px;
-            background-color: #9880ff;
-            color: #9880ff;
-            animation: dot-flashing 1s infinite alternate;
-            animation-delay: 1s;
-        }
-        @keyframes dot-flashing {
-            0% {
+    <head>
+        <meta charset="UTF-8" />
+        <title>AI 課程推薦系統</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/anandzhang/markdown-css/css/markdown.css" />
+        <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
+        <style>
+            body,
+            html {
+                margin: 0;
+                padding: 0;
+                height: 100vh;
+                overflow: hidden;
+                background-color: #f8f9fa;
+            }
+            .chat-layout {
+                display: flex;
+                height: 100vh;
+                width: 100%;
+                overflow: hidden;
+            }
+            .sidebar {
+                width: 300px;
+                background-color: #ffffff;
+                border-right: 1px solid #e0e0e0;
+                height: 100%;
+                overflow-y: auto;
+                padding: 20px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+            }
+            .chat-section {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                overflow: hidden;
+            }
+            .chat-box {
+                flex: 1;
+                overflow-y: auto;
+                padding: 20px;
+                background-color: #fff;
+            }
+            .input-area {
+                padding: 15px 20px;
+                background-color: #fff;
+                border-top: 1px solid #e0e0e0;
+                display: flex;
+                align-items: center;
+            }
+            .chat-entry {
+                margin-bottom: 20px;
+            }
+            .user-reply {
+                background-color: #0d6efd;
+                color: white;
+                border-radius: 18px;
+                padding: 12px 18px;
+                max-width: 75%;
+                word-wrap: break-word;
+                margin-left: auto;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            }
+            .bot-reply {
+                background-color: #f5f5f5;
+                border-radius: 18px;
+                padding: 12px 18px;
+                max-width: 75%;
+                word-wrap: break-word;
+                margin-right: auto;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            }
+            .markdown-body-light {
+                background-color: transparent;
+                color: inherit;
+                font-size: 0.95rem;
+                line-height: 1.5;
+            }
+            .form-check-label {
+                margin-right: 10px;
+            }
+            .nav-top {
+                padding: 15px;
+                background-color: #fff;
+                border-bottom: 1px solid #e0e0e0;
+                text-align: center;
+                font-weight: bold;
+                font-size: 1.2rem;
+            }
+            textarea.form-control {
+                border-radius: 20px;
+                padding: 10px 15px;
+                resize: none;
+                border: 1px solid #ccc;
+                flex: 1;
+            }
+            .send-btn {
+                background-color: #0d6efd;
+                border: none;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                margin-left: 10px;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .send-btn:hover {
+                background-color: #0b5ed7;
+            }
+            .send-btn:disabled {
+                background-color: #6c757d;
+                cursor: not-allowed;
+            }
+            .dot-flashing {
+                position: relative;
+                width: 10px;
+                height: 10px;
+                border-radius: 5px;
                 background-color: #9880ff;
+                color: #9880ff;
+                animation: dot-flashing 1s infinite linear alternate;
+                animation-delay: 0.5s;
+                margin: 0 5px;
             }
-            50%, 100% {
-                background-color: rgba(152, 128, 255, 0.2);
+            .dot-flashing::before,
+            .dot-flashing::after {
+                content: "";
+                display: inline-block;
+                position: absolute;
+                top: 0;
             }
-        }
-        .loading-bot-reply {
-            display: none;
-            padding: 15px;
-        }
-        .day-header {
-            font-weight: bold;
-            margin-bottom: 8px;
-            margin-top: 15px;
-            color: #343a40;
-        }
-        .slot-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-        .period-item {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .scroll-btn {
-            position: fixed;
-            bottom: 80px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: rgba(13, 110, 253, 0.7);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 1000;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: all 0.3s;
-        }
-        .scroll-btn:hover {
-            background-color: rgba(13, 110, 253, 1);
-        }
-    </style>
-</head>
-<body>
-    <div class="chat-layout">
-        <!-- 左側：時間選擇 -->
-        <div class="sidebar">
-            <h5>選擇課堂時間</h5>
-            <form id="schedule-form">
-                {% set weekdays = ['日','一','二','三','四','五','六','日'] %} 
-                {% set periods = ['0','1','2','3','4','5','6','7','8','9','10','A','B','C','D'] %} 
-                {% for i in range(1,8) %}
-                <div class="day-header">星期{{ weekdays[i] }}</div>
-                <div class="slot-grid">
-                    {% for p in periods %}
-                    <div class="period-item">
-                        <input class="form-check-input" type="checkbox" name="timeslot" value="{{ i }}_{{ p }}" id="{{ i }}_{{ p }}" 
-                            {% if i ~ '_' ~ p in selected_slots %}checked{% endif %}>
-                        <label class="form-check-label ms-1" for="{{ i }}_{{ p }}">{{ p }}</label>
+            .dot-flashing::before {
+                left: -15px;
+                width: 10px;
+                height: 10px;
+                border-radius: 5px;
+                background-color: #9880ff;
+                color: #9880ff;
+                animation: dot-flashing 1s infinite alternate;
+                animation-delay: 0s;
+            }
+            .dot-flashing::after {
+                left: 15px;
+                width: 10px;
+                height: 10px;
+                border-radius: 5px;
+                background-color: #9880ff;
+                color: #9880ff;
+                animation: dot-flashing 1s infinite alternate;
+                animation-delay: 1s;
+            }
+            @keyframes dot-flashing {
+                0% {
+                    background-color: #9880ff;
+                }
+                50%,
+                100% {
+                    background-color: rgba(152, 128, 255, 0.2);
+                }
+            }
+            .loading-bot-reply {
+                display: none;
+                padding: 15px;
+            }
+            .day-header {
+                font-weight: bold;
+                margin-bottom: 8px;
+                margin-top: 15px;
+                color: #343a40;
+            }
+            .slot-grid {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 5px;
+                margin-bottom: 10px;
+            }
+            .period-item {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .scroll-btn {
+                position: fixed;
+                bottom: 80px;
+                right: 20px;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background-color: rgba(13, 110, 253, 0.7);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                z-index: 1000;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                transition: all 0.3s;
+            }
+            .scroll-btn:hover {
+                background-color: rgba(13, 110, 253, 1);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="chat-layout">
+            <!-- 左側：時間選擇 -->
+            <div class="sidebar">
+                <h5>選擇課堂時間</h5>
+                <form id="schedule-form">
+                    {% set weekdays = ['日','一','二','三','四','五','六','日'] %} {% set periods = ['0','1','2','3','4','5','6','7','8','9','10','A','B','C','D'] %} {% for i in range(1,8) %}
+                    <div class="day-header">星期{{ weekdays[i] }}</div>
+                    <div class="slot-grid">
+                        {% for p in periods %}
+                        <div class="period-item">
+                            <input class="form-check-input" type="checkbox" name="timeslot" value="{{ i }}_{{ p }}" id="{{ i }}_{{ p }}" {% if i ~ '_' ~ p in selected_slots %}checked{% endif %}>
+                            <label class="form-check-label ms-1" for="{{ i }}_{{ p }}">{{ p }}</label>
+                        </div>
+                        {% endfor %}
                     </div>
                     {% endfor %}
-                </div>
-                {% endfor %}
-            </form>
-        </div>
-
-        <!-- 右側：聊天區 -->
-        <div class="chat-section">
-            <div class="nav-top">AI 課程助手</div>
-            <div class="chat-box" id="chat-container">
-                {% for chat in chat_history %}
-                <div class="chat-entry">
-                    {% if chat.user %}
-                    <div class="d-flex justify-content-end">
-                        <div class="user-reply">{{ chat.user }}</div>
-                    </div>
-                    {% endif %}
-                    <div class="d-flex justify-content-start">
-                        <div class="bot-reply">
-                            <div class="markdown-body-light" id="rendered-{{ loop.index }}"></div>
-                        </div>
-                    </div>
-                    <script type="application/json" id="md-{{ loop.index }}">
-                        {{ chat.bot | tojson | safe }}
-                    </script>
-                </div>
-                {% endfor %}
-                <div class="loading-bot-reply" id="ai-thinking">
-                    <div class="d-flex justify-content-start">
-                        <div class="bot-reply">
-                            <div class="dot-flashing"></div>
-                        </div>
-                    </div>
-                </div>
+                </form>
             </div>
 
-            <div class="input-area">
-                <textarea class="form-control" id="user-input" placeholder="輸入你的問題..."></textarea>
-                <button type="button" class="send-btn" id="submit-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-send" viewBox="0 0 16 16">
-                        <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576zm6.787-8.201L1.591 6.602l4.339 2.76z"/>
+            <!-- 右側：聊天區 -->
+            <div class="chat-section">
+                <div class="nav-top">AI 課程助手</div>
+                <div class="chat-box" id="chat-container">
+                    {% for chat in chat_history %}
+                    <div class="chat-entry">
+                        {% if chat.user %}
+                        <div class="d-flex justify-content-end">
+                            <div class="user-reply">{{ chat.user }}</div>
+                        </div>
+                        {% endif %}
+                        <div class="d-flex justify-content-start">
+                            <div class="bot-reply">
+                                <!-- 直接顯示內容，不經過 markdown 渲染 -->
+                                <div class="markdown-body-light" id="rendered-{{ loop.index }}">{{ chat.bot | safe }}</div>
+                            </div>
+                        </div>
+                        <!-- 保留原始數據以備後續使用 -->
+                        <script type="application/json" id="md-{{ loop.index }}">
+                            {{ chat.bot | tojson | safe }}
+                        </script>
+                    </div>
+                    {% endfor %}
+                    <div class="loading-bot-reply" id="ai-thinking">
+                        <div class="d-flex justify-content-start">
+                            <div class="bot-reply">
+                                <div class="dot-flashing"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-area">
+                    <textarea class="form-control" id="user-input" placeholder="輸入你的問題..."></textarea>
+                    <button type="button" class="send-btn" id="submit-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-send" viewBox="0 0 16 16">
+                            <path
+                                d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576zm6.787-8.201L1.591 6.602l4.339 2.76z"
+                            />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="scroll-btn" id="scroll-to-bottom" style="display: none">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8...z" />
                     </svg>
-                </button>
-            </div>
-
-            <div class="scroll-btn" id="scroll-to-bottom" style="display: none;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8...z"/>
-                </svg>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const chatBox = document.querySelector(".chat-box");
-            const scrollBtn = document.getElementById("scroll-to-bottom");
-            const aiThinking = document.getElementById("ai-thinking");
-            const submitBtn = document.getElementById("submit-btn");
-            const userInput = document.getElementById("user-input");
-            const chatContainer = document.getElementById("chat-container");
-            const checkboxes = document.querySelectorAll('input[name="timeslot"]');
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const chatBox = document.querySelector(".chat-box");
+                const scrollBtn = document.getElementById("scroll-to-bottom");
+                const aiThinking = document.getElementById("ai-thinking");
+                const submitBtn = document.getElementById("submit-btn");
+                const userInput = document.getElementById("user-input");
+                const chatContainer = document.getElementById("chat-container");
+                const checkboxes = document.querySelectorAll('input[name="timeslot"]');
 
-            const md = window.markdownit({ breaks: true, linkify: true, typographer: true });
+                const md = window.markdownit({ breaks: true, linkify: true, typographer: true });
 
-            function scrollToBottom() {
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }
+                function scrollToBottom() {
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
 
-            function renderMarkdown() {
-                document.querySelectorAll("script[type='application/json']").forEach((script) => {
-                    const index = script.id.replace("md-", "");
-                    const container = document.getElementById("rendered-" + index);
-                    try {
-                        // 去除開頭和結尾的引號（如果存在）
-                        let raw = script.textContent.trim();
-                        
-                        try {
-                            // 嘗試解析 JSON
-                            let content = JSON.parse(raw);
-                            
-                            // 如果解析成功，使用解析後的內容
-                            if (typeof content === 'string') {
-                                container.innerHTML = md.render(content);
-                            } else {
-                                console.log("解析的JSON不是字符串:", content);
-                                container.innerHTML = md.render(String(content));
-                            }
-                        } catch (jsonErr) {
-                            // 如果 JSON 解析失敗，直接使用原始內容
-                            console.log("JSON解析失敗，直接使用原始內容:", raw);
-                            container.innerHTML = md.render(raw);
+                function renderMarkdown() {
+                    document.querySelectorAll("script[type='application/json']").forEach((script) => {
+                        const index = script.id.replace("md-", "");
+                        const container = document.getElementById("rendered-" + index);
+
+                        if (!container) {
+                            console.error(`找不到容器 #rendered-${index}`);
+                            return;
                         }
+
+                        try {
+                            // 先顯示正在渲染的訊息
+                            container.innerHTML = '<div style="color:#6c757d;">正在渲染回覆...</div>';
+
+                            // 取得原始文本
+                            let rawText = script.textContent.trim();
+                            console.log(`[Debug] 原始內容 #${index}:`, rawText);
+
+                            // 步驟 1: 嘗試 JSON 解析
+                            let markdownContent;
+                            try {
+                                const jsonContent = JSON.parse(rawText);
+                                console.log(`[Debug] JSON解析後 #${index}:`, jsonContent);
+
+                                // 將任何形式的內容轉換為字符串
+                                markdownContent = typeof jsonContent === "string" ? jsonContent : String(jsonContent);
+                            } catch (jsonErr) {
+                                console.warn(`[警告] JSON解析失敗 #${index}:`, jsonErr);
+                                // 直接使用原始內容
+                                markdownContent = rawText;
+                            }
+
+                            // 步驟 2: 渲染 Markdown
+                            console.log(`[Debug] 要渲染的內容 #${index}:`, markdownContent);
+
+                            // 先顯示原始文本，再嘗試渲染Markdown
+                            const renderedHTML = md.render(markdownContent);
+                            container.innerHTML = renderedHTML || '<div style="color:darkred;">無法渲染</div>';
+                        } catch (e) {
+                            console.error(`[錯誤] 渲染總體失敗 #${index}:`, e);
+                            container.innerHTML = `<pre style="color:red;">❗ 渲染失敗：${e.message}</pre>`;
+                        }
+                    });
+                }
+
+                // 頁面加載後延遲一點時間再渲染Markdown，確保DOM完全加載
+                setTimeout(() => {
+                    try {
+                        renderMarkdown();
+                        console.log("Markdown 渲染完成");
                     } catch (e) {
-                        console.error("渲染失敗:", e, "原始內容:", script.textContent);
-                        container.innerHTML = `<pre style="color:red;">❗ 渲染失敗：${e.message}</pre>`;
+                        console.error("初始Markdown渲染失敗:", e);
                     }
+                    scrollToBottom();
+                }, 100);
+
+                chatBox.addEventListener("scroll", () => {
+                    const isNearBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 100;
+                    scrollBtn.style.display = isNearBottom ? "none" : "flex";
                 });
-            }
 
-            renderMarkdown();
-            scrollToBottom();
+                scrollBtn.addEventListener("click", scrollToBottom);
 
-            chatBox.addEventListener("scroll", () => {
-                const isNearBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 100;
-                scrollBtn.style.display = isNearBottom ? "none" : "flex";
-            });
-
-            scrollBtn.addEventListener("click", scrollToBottom);
-
-            userInput.addEventListener("input", function () {
-                this.style.height = "auto";
-                this.style.height = Math.min(this.scrollHeight, 150) + "px";
-            });
-
-            checkboxes.forEach(cb => {
-                cb.addEventListener("change", () => {
-                    const selected = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
-                    fetch("/save_schedule", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ slots: selected }),
-                    }).then(res => res.json())
-                      .then(() => console.log("✅ 排程已更新"))
-                      .catch(() => alert("❌ 儲存失敗，請稍後再試"));
+                userInput.addEventListener("input", function () {
+                    this.style.height = "auto";
+                    this.style.height = Math.min(this.scrollHeight, 150) + "px";
                 });
-            });
 
-            function escapeHtml(text) {
-                return text.replace(/&/g, "&amp;").replace(/</g, "&lt;")
-                           .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
-                           .replace(/'/g, "&#039;");
-            }
+                checkboxes.forEach((cb) => {
+                    cb.addEventListener("change", () => {
+                        const selected = Array.from(checkboxes)
+                            .filter((c) => c.checked)
+                            .map((c) => c.value);
+                        fetch("/save_schedule", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ slots: selected }),
+                        })
+                            .then((res) => res.json())
+                            .then(() => console.log("✅ 排程已更新"))
+                            .catch(() => alert("❌ 儲存失敗，請稍後再試"));
+                    });
+                });
 
-            function sendMessage(message) {
-                submitBtn.disabled = true;
-                aiThinking.style.display = "block";
+                function escapeHtml(text) {
+                    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+                }
 
-                chatContainer.insertAdjacentHTML("beforeend", `
+                function sendMessage(message) {
+                    submitBtn.disabled = true;
+                    aiThinking.style.display = "block";
+
+                    chatContainer.insertAdjacentHTML(
+                        "beforeend",
+                        `
                     <div class="chat-entry">
                         <div class="d-flex justify-content-end">
                             <div class="user-reply">${escapeHtml(message)}</div>
                         </div>
                     </div>
-                `);
-                scrollToBottom();
-                userInput.value = "";
-                userInput.style.height = 'auto';
-
-                const selected = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
-
-                fetch("/chat", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ user_input: message, slots: selected })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    aiThinking.style.display = "none";
-                    const botIndex = document.querySelectorAll(".chat-entry").length + 1;
-                    // 調試輸出
-                    console.log("收到的回覆類型:", typeof data.answer, "內容:", data.answer);
-                    
-                    // 直接使用原始回覆，不進行 JSON 序列化
-                    chatContainer.insertAdjacentHTML("beforeend", `
-                        <div class="chat-entry">
-                            <div class="d-flex justify-content-start">
-                                <div class="bot-reply">
-                                    <div class="markdown-body-light" id="rendered-${botIndex}"></div>
-                                </div>
-                            </div>
-                            <script type="application/json" id="md-${botIndex}">
-                                ${JSON.stringify(data.answer)}
-                            </script>
-                        </div>
-                    `);
-                    renderMarkdown();
+                `
+                    );
                     scrollToBottom();
-                })
-                .catch(err => {
-                    console.error("聊天錯誤:", err);
-                    aiThinking.style.display = "none";
-                    chatContainer.insertAdjacentHTML("beforeend", `
+                    userInput.value = "";
+                    userInput.style.height = "auto";
+
+                    const selected = Array.from(checkboxes)
+                        .filter((c) => c.checked)
+                        .map((c) => c.value);
+
+                    fetch("/chat", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ user_input: message, slots: selected }),
+                    })
+                        .then((res) => res.json())
+                        .then((data) => {
+                            aiThinking.style.display = "none";
+                            const botIndex = document.querySelectorAll(".chat-entry").length + 1;
+                            // 調試輸出
+                            console.log("收到的回覆類型:", typeof data.answer, "內容:", data.answer);
+
+                            // 直接顯示原始文本
+                            const rawContent = data.answer || "無回覆內容";
+
+                            // 安全處理回覆
+                            let escapedContent;
+                            try {
+                                // 先以純文本方式顯示回覆
+                                escapedContent = JSON.stringify(rawContent);
+                            } catch (e) {
+                                console.error("序列化回覆失敗:", e);
+                                escapedContent = JSON.stringify("序列化回覆失敗，請嘗試重新發送訊息");
+                            }
+
+                            // 創建回覆元素
+                            const chatEntry = document.createElement("div");
+                            chatEntry.className = "chat-entry";
+
+                            // 創建一個容器
+                            const flexContainer = document.createElement("div");
+                            flexContainer.className = "d-flex justify-content-start";
+
+                            // 創建 bot-reply 元素
+                            const botReply = document.createElement("div");
+                            botReply.className = "bot-reply";
+
+                            // 創建 markdown 容器元素
+                            const markdownContainer = document.createElement("div");
+                            markdownContainer.className = "markdown-body-light";
+                            markdownContainer.id = `rendered-${botIndex}`;
+
+                            // 為測試暫時直接添加原始文本
+                            try {
+                                markdownContainer.innerHTML = md.render(rawContent);
+                            } catch (renderErr) {
+                                console.error("Markdown渲染失敗:", renderErr);
+                                markdownContainer.textContent = rawContent;
+                            }
+
+                            // 組合元素
+                            botReply.appendChild(markdownContainer);
+                            flexContainer.appendChild(botReply);
+                            chatEntry.appendChild(flexContainer);
+
+                            // 將隱藏的JSON添加到DOM中供以後引用
+                            const jsonScript = document.createElement("script");
+                            jsonScript.type = "application/json";
+                            jsonScript.id = `md-${botIndex}`;
+                            jsonScript.textContent = escapedContent;
+                            chatEntry.appendChild(jsonScript);
+
+                            // 添加到聊天容器
+                            chatContainer.appendChild(chatEntry);
+                            renderMarkdown();
+                            scrollToBottom();
+                        })
+                        .catch((err) => {
+                            console.error("聊天錯誤:", err);
+                            aiThinking.style.display = "none";
+                            chatContainer.insertAdjacentHTML(
+                                "beforeend",
+                                `
                         <div class="chat-entry">
                             <div class="d-flex justify-content-start">
                                 <div class="bot-reply">
@@ -414,26 +487,27 @@
                                 </div>
                             </div>
                         </div>
-                    `);
-                })
-                .finally(() => {
-                    submitBtn.disabled = false;
-                });
-            }
+                    `
+                            );
+                        })
+                        .finally(() => {
+                            submitBtn.disabled = false;
+                        });
+                }
 
-            submitBtn.addEventListener("click", () => {
-                const message = userInput.value.trim();
-                if (message) sendMessage(message);
-            });
-
-            userInput.addEventListener("keydown", function (e) {
-                if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
+                submitBtn.addEventListener("click", () => {
                     const message = userInput.value.trim();
                     if (message) sendMessage(message);
-                }
+                });
+
+                userInput.addEventListener("keydown", function (e) {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        const message = userInput.value.trim();
+                        if (message) sendMessage(message);
+                    }
+                });
             });
-        });
-    </script>
-</body>
+        </script>
+    </body>
 </html>
