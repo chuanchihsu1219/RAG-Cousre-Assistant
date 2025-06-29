@@ -13,10 +13,7 @@ app.register_blueprint(chat_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(schedule_bp)
 
-print("🔄 初始化向量資料庫...", flush=True)
 initialize_vectordb()
-print("✅ 向量資料庫初始化完成！")
-print("✅ 向量資料庫初始化完成~~", flush=True)
 
 @app.route("/")
 def index():

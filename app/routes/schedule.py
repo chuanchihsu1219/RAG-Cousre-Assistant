@@ -49,7 +49,6 @@ def save_schedule():
         if not user_id:
             return jsonify(success=False, message="未登入"), 401
 
-        # ✅✅✅ 這裡要有 print！
         slots = request.json.get("slots", [])
         print("🔧 收到 slots:", slots)
 

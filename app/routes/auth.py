@@ -38,7 +38,7 @@ def register():
 def login():
     if request.method == "POST":
         email = request.form.get("email")
-        password = request.form.get("password")
+        password = str(request.form.get("password"))
 
         user_data = supabase.table("users").select("*").eq("email", email).execute().data
         if not user_data:

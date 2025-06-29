@@ -3,7 +3,7 @@ import os
 import re
 import markdown
 from app.utils.blob_loader import download_and_extract_chroma_data
-from langchain_chroma import Chroma  # ✅ 使用新版本 Chroma
+from langchain_chroma import Chroma
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
@@ -16,10 +16,6 @@ BLOB_CONTAINER_NAME = os.environ["AZURE_BLOB_CONTAINER"]
 BLOB_FILE_NAME = os.environ["BLOB_NAME"]
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
-
-# 計算 Chroma 資料夾位置（同層 persist）
-# BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-# CHROMA_LOCAL_DIR = os.path.join(BASE_DIR, "persist", "chroma_data")
 
 CHROMA_LOCAL_DIR = "persist"
 
@@ -43,6 +39,8 @@ prompt = PromptTemplate.from_template(
 
 
 def initialize_vectordb():
+    print("🔄 初始化向量資料庫...", flush=True)
+
     global vectordb, qa_chain
 
     if vectordb is not None:
@@ -51,13 +49,14 @@ def initialize_vectordb():
     if not os.path.exists(CHROMA_LOCAL_DIR):
         download_and_extract_chroma_data(container_name=BLOB_CONTAINER_NAME, blob_name=BLOB_FILE_NAME, download_dir=CHROMA_LOCAL_DIR, connection_string=BLOB_CONNECTION_STRING)
 
-    embedding = OpenAIEmbeddings(api_key=OPENAI_API_KEY)
+    embedding = OpenAIEmbeddings(api_key=SecretStr(OPENAI_API_KEY))
     vectordb = Chroma(persist_directory=CHROMA_LOCAL_DIR, embedding_function=embedding)
     retriever = vectordb.as_retriever(search_kwargs={"k": 5})
 
     # Debug 向量筆數
     try:
         print("📊 向量資料筆數：", len(vectordb.get()["documents"]))
+        print("✅ 向量資料庫初始化完成！")
     except Exception as e:
         print("❌ 向量讀取失敗：", e)
 
