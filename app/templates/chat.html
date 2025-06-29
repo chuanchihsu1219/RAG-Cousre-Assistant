@@ -240,7 +240,9 @@
                     </div>
                     {% endif %}
                     <div class="d-flex justify-content-start">
-                        <div class="bot-reply markdown-body-light" id="rendered-{{ loop.index }}"></div>
+                        <div class="bot-reply">
+                            <div class="markdown-body-light" id="rendered-{{ loop.index }}"></div>
+                        </div>
                     </div>
                     <script type="application/json" id="md-{{ loop.index }}">
                         {{ chat.bot | tojson | safe }}
@@ -365,7 +367,9 @@
                     chatContainer.insertAdjacentHTML("beforeend", `
                         <div class="chat-entry">
                             <div class="d-flex justify-content-start">
-                                <div class="bot-reply markdown-body-light" id="rendered-${botIndex}"></div>
+                                <div class="bot-reply">
+                                    <div class="markdown-body-light" id="rendered-${botIndex}"></div>
+                                </div>
                             </div>
                             <script type="application/json" id="md-${botIndex}">
                                 ${JSON.stringify(data.answer)}
@@ -381,8 +385,10 @@
                     chatContainer.insertAdjacentHTML("beforeend", `
                         <div class="chat-entry">
                             <div class="d-flex justify-content-start">
-                                <div class="bot-reply markdown-body-light" style="color:#dc3545;">
-                                    ❌ 發送失敗，請稍後再試
+                                <div class="bot-reply">
+                                    <div class="markdown-body-light" style="color:#dc3545;">
+                                        ❌ 發送失敗，請稍後再試
+                                    </div>
                                 </div>
                             </div>
                         </div>
