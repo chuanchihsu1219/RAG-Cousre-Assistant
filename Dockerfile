@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bullseye
+FROM python:3.11-slim-bookworm
 
 # 更新系統套件以減少漏洞
 RUN apt-get update && apt-get upgrade -y && apt-get dist-upgrade -y && apt-get install --only-upgrade python3 && apt-get clean && rm -rf /var/lib/apt/lists/*
