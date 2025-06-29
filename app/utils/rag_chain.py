@@ -53,13 +53,13 @@ _initialized = False
 
 def initialize_vectordb():
     global vectordb, qa_chain, _initialized
-    _initialized = True
 
     if _initialized:
         print("⚠️ 已初始化過向量資料庫，略過。", flush=True)
         return
 
     print("🔄 初始化向量資料庫...", flush=True)
+    _initialized = True
     list_collections("persist")  # 可保留做 sanity check
 
     if not os.path.exists(CHROMA_LOCAL_DIR):
