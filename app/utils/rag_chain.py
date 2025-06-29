@@ -53,6 +53,7 @@ _initialized = False
 
 def initialize_vectordb():
     global vectordb, qa_chain, _initialized
+    _initialized = True
 
     if _initialized:
         print("⚠️ 已初始化過向量資料庫，略過。", flush=True)
@@ -67,7 +68,7 @@ def initialize_vectordb():
     embedding = OpenAIEmbeddings(api_key=SecretStr(OPENAI_API_KEY))
     vectordb = Chroma(
         persist_directory=CHROMA_LOCAL_DIR,
-        collection_name="8f32e79c-8252-4231-8783-bf4c51b313b8",  # 🔥最關鍵
+        # collection_name="8f32e79c-8252-4231-8783-bf4c51b313b8",  # 🔥最關鍵
         embedding_function=embedding,
     )
 
@@ -82,7 +83,6 @@ def initialize_vectordb():
         print("❌ 向量讀取失敗：", e, flush=True)
 
     print("✅ 向量資料庫初始化完成！", flush=True)
-    _initialized = True
 
 
 def clean_markdown(text: str) -> str:
