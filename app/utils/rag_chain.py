@@ -50,7 +50,7 @@ def initialize_vectordb():
         download_and_extract_chroma_data(container_name=BLOB_CONTAINER_NAME, blob_name=BLOB_FILE_NAME, download_dir=CHROMA_LOCAL_DIR, connection_string=BLOB_CONNECTION_STRING)
 
     embedding = OpenAIEmbeddings(api_key=SecretStr(OPENAI_API_KEY))
-    vectordb = Chroma(persist_directory=CHROMA_LOCAL_DIR, embedding_function=embedding, collection_name="course_recommendation")
+    vectordb = Chroma(persist_directory=CHROMA_LOCAL_DIR, embedding_function=embedding, collection_name="8f32e79c-8252-4231-8783-bf4c51b313b8")
     retriever = vectordb.as_retriever(search_kwargs={"k": 5})
 
     # Debug 向量筆數
