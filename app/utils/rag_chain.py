@@ -9,6 +9,7 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_core.output_parsers import StrOutputParser
 from pydantic import SecretStr
+from chromadb import PersistentClient
 
 # 環境設定
 BLOB_CONNECTION_STRING = os.environ["AZURE_BLOB_CONNECTION_STRING"]
@@ -38,30 +39,50 @@ prompt = PromptTemplate.from_template(
 )
 
 
+def list_collections(persist_dir="persist"):
+    client = PersistentClient(path=persist_dir)
+    collections = client.list_collections()
+
+    print(f"📁 共有 {len(collections)} 個 collections：")
+    for col in collections:
+        print(f"- name: {col.name}, id: {col.id}")
+
+
+_initialized = False
+
+
 def initialize_vectordb():
-    print("🔄 初始化向量資料庫...", flush=True)
+    global vectordb, qa_chain, _initialized
 
-    global vectordb, qa_chain
-
-    if vectordb is not None:
+    if _initialized:
+        print("⚠️ 已初始化過向量資料庫，略過。", flush=True)
         return
+
+    print("🔄 初始化向量資料庫...", flush=True)
+    list_collections("persist")  # 可保留做 sanity check
 
     if not os.path.exists(CHROMA_LOCAL_DIR):
         download_and_extract_chroma_data(container_name=BLOB_CONTAINER_NAME, blob_name=BLOB_FILE_NAME, download_dir=CHROMA_LOCAL_DIR, connection_string=BLOB_CONNECTION_STRING)
 
     embedding = OpenAIEmbeddings(api_key=SecretStr(OPENAI_API_KEY))
-    vectordb = Chroma(persist_directory=CHROMA_LOCAL_DIR, embedding_function=embedding, collection_name="8f32e79c-8252-4231-8783-bf4c51b313b8")
-    retriever = vectordb.as_retriever(search_kwargs={"k": 5})
+    vectordb = Chroma(
+        persist_directory=CHROMA_LOCAL_DIR,
+        collection_name="8f32e79c-8252-4231-8783-bf4c51b313b8",  # 🔥最關鍵
+        embedding_function=embedding,
+    )
 
-    # Debug 向量筆數
+    retriever = vectordb.as_retriever(search_kwargs={"k": 5})
+    llm = ChatOpenAI(model=OPENAI_MODEL, api_key=SecretStr(OPENAI_API_KEY), temperature=0.3)
+
+    qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever, return_source_documents=True, chain_type_kwargs={"prompt": prompt})
+
     try:
         print("📊 向量資料筆數：", len(vectordb.get()["documents"]), flush=True)
-        print("✅ 向量資料庫初始化完成！", flush=True)
     except Exception as e:
         print("❌ 向量讀取失敗：", e, flush=True)
 
-    llm = ChatOpenAI(model=OPENAI_MODEL, api_key=SecretStr(OPENAI_API_KEY), temperature=0.3)
-    qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever, return_source_documents=True, chain_type_kwargs={"prompt": prompt})
+    print("✅ 向量資料庫初始化完成！", flush=True)
+    _initialized = True
 
 
 def clean_markdown(text: str) -> str:
