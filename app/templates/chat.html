@@ -74,60 +74,63 @@
     </head>
     <body>
         <div class="container">
-            <div class="row">
-                <!-- 左：時間選擇 -->
-                <div class="col-md-4">
-                    <div class="timeslot-box">
-                        <h5>選擇課堂時間</h5>
-                        <div class="row">
-                            {% set weekdays = ['日','一','二','三','四','五','六','日'] %} {% set periods = ['0','1','2','3','4','5','6','7','8','9','10','A','B','C','D'] %} {% for i in range(1,8) %}
-                            <div class="col-12 mb-2">
-                                <strong>星期{{ weekdays[i] }}</strong><br />
-                                {% for p in periods %}
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" name="timeslot" value="{{ i }}_{{ p }}" id="{{ i }}_{{ p }}" {% if i ~ '_' ~ p in selected_slots %}checked{% endif
-                                    %}>
-                                    <label class="form-check-label" for="{{ i }}_{{ p }}">{{ p }}</label>
+            <form method="POST" action="/chat" id="chat-form">
+                <div class="row">
+                    <!-- 左：時間選擇 -->
+                    <div class="col-md-4">
+                        <div class="timeslot-box">
+                            <h5>選擇課堂時間</h5>
+                            <div class="row">
+                                {% set weekdays = ['日','一','二','三','四','五','六','日'] %} {% set periods = ['0','1','2','3','4','5','6','7','8','9','10','A','B','C','D'] %} {% for i in range(1,8)
+                                %}
+                                <div class="col-12 mb-2">
+                                    <strong>星期{{ weekdays[i] }}</strong><br />
+                                    {% for p in periods %}
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" name="timeslot" value="{{ i }}_{{ p }}" id="{{ i }}_{{ p }}" {% if i ~ '_' ~ p in selected_slots %}checked{%
+                                        endif %}>
+                                        <label class="form-check-label" for="{{ i }}_{{ p }}">{{ p }}</label>
+                                    </div>
+                                    {% endfor %}
                                 </div>
                                 {% endfor %}
                             </div>
+                            <div id="loading" style="display: none" class="text-center mt-3">⏳ 載入中，請稍候...</div>
+                        </div>
+                    </div>
+
+                    <!-- 右：聊天區 -->
+                    <div class="col-md-8">
+                        <div class="chat-box mb-3" id="chat-container">
+                            {% for chat in chat_history %}
+                            <div class="chat-entry">
+                                {% if chat.user %}
+                                <!-- 使用者輸入（右邊對齊） -->
+                                <div class="d-flex justify-content-end">
+                                    <div class="user-reply text-white bg-primary p-2 rounded mb-1" style="max-width: 75%">{{ chat.user }}</div>
+                                </div>
+                                {% endif %}
+
+                                <!-- AI 回覆（左邊對齊） -->
+                                <div class="d-flex justify-content-start">
+                                    <div class="bot-reply markdown-body-light" id="rendered-{{ loop.index }}"></div>
+                                </div>
+
+                                <script type="application/json" id="md-{{ loop.index }}">
+                                    {{ chat.bot | tojson | safe }}
+                                </script>
+                            </div>
                             {% endfor %}
                         </div>
-                        <div id="loading" style="display: none" class="text-center mt-3">⏳ 載入中，請稍候...</div>
+                        <div>
+                            <div class="mb-3">
+                                <textarea class="form-control" id="user-input" name="user_input" rows="2" placeholder="輸入你的問題..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="submit-btn">送出</button>
+                        </div>
                     </div>
                 </div>
-
-                <!-- 右：聊天區 -->
-                <div class="col-md-8">
-                    <div class="chat-box mb-3" id="chat-container">
-                        {% for chat in chat_history %}
-                        <div class="chat-entry">
-                            {% if chat.user %}
-                            <!-- 使用者輸入（右邊對齊） -->
-                            <div class="d-flex justify-content-end">
-                                <div class="user-reply text-white bg-primary p-2 rounded mb-1" style="max-width: 75%">{{ chat.user }}</div>
-                            </div>
-                            {% endif %}
-
-                            <!-- AI 回覆（左邊對齊） -->
-                            <div class="d-flex justify-content-start">
-                                <div class="bot-reply markdown-body-light" id="rendered-{{ loop.index }}"></div>
-                            </div>
-
-                            <script type="application/json" id="md-{{ loop.index }}">
-                                {{ chat.bot | tojson | safe }}
-                            </script>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <div>
-                        <div class="mb-3">
-                            <textarea class="form-control" id="user-input" rows="2" placeholder="輸入你的問題..."></textarea>
-                        </div>
-                        <button type="button" class="btn btn-primary" id="submit-btn">送出</button>
-                    </div>
-                </div>
-            </div>
+            </form>
         </div>
 
         <script>
@@ -185,8 +188,13 @@
                     });
                 });
 
-                // 聊天提交處理
-                submitBtn.addEventListener("click", function () {
+                // 獲取表單元素
+                const chatForm = document.getElementById("chat-form");
+
+                // 聊天提交處理 - 攔截表單提交事件，改用 AJAX
+                chatForm.addEventListener("submit", function (e) {
+                    e.preventDefault(); // 阻止傳統表單提交
+
                     const message = userInput.value.trim();
                     if (!message) return;
 
@@ -211,23 +219,25 @@
                         .filter((c) => c.checked)
                         .map((c) => c.value);
 
-                    // 發送 AJAX 請求
-                    fetch("/chat", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            user_input: message,
-                            slots: selected,
-                        }),
-                    })
-                        .then((res) => res.json())
-                        .then((data) => {
-                            // 清空輸入框
-                            userInput.value = "";
+                    // 確認瀏覽器支援 fetch API
+                    if (window.fetch) {
+                        // 使用 AJAX 發送請求
+                        fetch("/chat", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                user_input: message,
+                                slots: selected,
+                            }),
+                        })
+                            .then((res) => res.json())
+                            .then((data) => {
+                                // 清空輸入框
+                                userInput.value = "";
 
-                            // 創建機器人回覆元素
-                            const botIndex = document.querySelectorAll(".chat-entry").length + 1;
-                            const botReplyHtml = `
+                                // 創建機器人回覆元素
+                                const botIndex = document.querySelectorAll(".chat-entry").length + 1;
+                                const botReplyHtml = `
           <div class="chat-entry">
             <div class="d-flex justify-content-start">
               <div class="bot-reply markdown-body-light" id="rendered-${botIndex}"></div>
@@ -236,24 +246,31 @@
           </div>
         `;
 
-                            // 添加到聊天容器
-                            chatContainer.insertAdjacentHTML("beforeend", botReplyHtml);
+                                // 添加到聊天容器
+                                chatContainer.insertAdjacentHTML("beforeend", botReplyHtml);
 
-                            // 重新渲染 markdown
-                            renderMarkdown();
+                                // 重新渲染 markdown
+                                renderMarkdown();
 
-                            // 滾動到底部
-                            chatBox.scrollTop = chatBox.scrollHeight;
-                        })
-                        .catch((err) => {
-                            console.error("聊天錯誤:", err);
-                            alert("❌ 發送失敗，請稍後再試");
-                        })
-                        .finally(() => {
-                            // 重新啟用按鈕並隱藏載入中
-                            submitBtn.disabled = false;
-                            loading.style.display = "none";
-                        });
+                                // 滾動到底部
+                                chatBox.scrollTop = chatBox.scrollHeight;
+                            })
+                            .catch((err) => {
+                                console.error("聊天錯誤:", err);
+                                alert("❌ 發送失敗，請稍後再試");
+
+                                // 如果 AJAX 失敗，回退到傳統表單提交
+                                chatForm.submit();
+                            })
+                            .finally(() => {
+                                // 重新啟用按鈕並隱藏載入中
+                                submitBtn.disabled = false;
+                                loading.style.display = "none";
+                            });
+                    } else {
+                        // 瀏覽器不支援 fetch API，使用傳統表單提交
+                        chatForm.submit();
+                    }
                 });
 
                 // 按 Enter 鍵提交

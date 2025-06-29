@@ -30,20 +30,22 @@ async def chat_get(request: Request, user_id: str = Depends(get_current_user)):
 
 
 @router.post("/chat")
-async def chat_post(request: Request, user_id: str = Depends(get_current_user)):
+async def chat_post(request: Request, user_input: str = Form(None), user_id: str = Depends(get_current_user)):
     # 取得勾選的時段
     selected = []
     response = supabase.table("preferences").select("slots").eq("user_id", user_id).execute()
     if response.data:
         selected = response.data[0]["slots"]
 
-    # 獲取用戶輸入
-    data = await request.json()
-    user_input = data.get("user_input", "")
+    # 判斷是 Form 表單還是 AJAX 請求
+    if request.headers.get("content-type", "").startswith("application/json"):
+        # 從 JSON 請求中獲取用戶輸入
+        data = await request.json()
+        user_input = data.get("user_input", "")
 
-    # 如果有新的時段選擇，使用這些時段，否則使用從資料庫獲取的時段
-    if "slots" in data and data["slots"]:
-        selected = data["slots"]
+        # 如果有新的時段選擇，使用這些時段
+        if "slots" in data and data["slots"]:
+            selected = data["slots"]
 
     # 推薦邏輯
     answer = recommend_course(user_input, selected)
@@ -51,5 +53,11 @@ async def chat_post(request: Request, user_id: str = Depends(get_current_user)):
     # 寫入聊天紀錄
     supabase.table("chat_history").insert({"user_id": user_id, "user_input": user_input, "bot_reply": answer, "used_slots": selected}).execute()
 
-    # 回傳 JSON 格式回應
-    return JSONResponse({"answer": answer})
+    # 判斷回應方式
+    if request.headers.get("content-type", "").startswith("application/json"):
+        # AJAX 請求，回傳 JSON
+        return JSONResponse({"answer": answer})
+    else:
+        # 表單提交，回傳整個頁面
+        chat_history = [{"user": user_input, "bot": answer}]
+        return templates.TemplateResponse("chat.html", {"request": request, "chat_history": chat_history, "selected_slots": selected})
