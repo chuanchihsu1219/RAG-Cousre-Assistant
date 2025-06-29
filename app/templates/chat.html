@@ -135,6 +135,31 @@
         container.innerHTML = `<pre style="color: red;">❗ 渲染失敗：${e.message}</pre>`;
       }
     });
+
+    // 自動儲存時間選擇
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][name="timeslot"]');
+    const statusEl = document.getElementById("save-status");
+
+    checkboxes.forEach(cb => {
+      cb.addEventListener("change", function () {
+        const selected = Array.from(checkboxes)
+                              .filter(c => c.checked)
+                              .map(c => c.value);
+
+        fetch("/save_schedule", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slots: selected })
+        })
+        .then(res => res.json())
+        .then(data => {
+          console.log("✅ 儲存回應:", data);
+        })
+        .catch(() => {
+          alert("❌ 儲存失敗，請稍後再試");
+        });
+      });
+    });
   });
 </script>
 </body>
