@@ -23,6 +23,7 @@
         const password = document.getElementById("password").value;
 
         try {
+            console.log("嘗試登入:", email);
             const res = await fetch("/login", {
                 method: "POST",
                 headers: {
@@ -32,6 +33,7 @@
                     username: email,
                     password: password,
                 }),
+                credentials: "include", // 重要：加入這個選項來包含 cookie
             });
 
             // 檢查是否重定向到/chat (成功登入)

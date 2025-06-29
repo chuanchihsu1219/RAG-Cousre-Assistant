@@ -46,12 +46,20 @@ def register(email: str = Form(...), password: str = Form(...)):
         supabase.table("users").insert({"id": user_id, "email": email, "password_hash": hashed_pw}).execute()
         logger.info(f"用戶註冊成功: {email} / {user_id}")
 
+        # 生成訪問 token
         access_token = create_access_token(data={"sub": user_id})
+        logger.info(f"用戶 {user_id} 註冊成功，生成訪問令牌")
 
-        # 設置 cookie 和重定向到聊天頁面
+        # 設定 cookie 和重定向到聊天頁面
         response = RedirectResponse(url="/chat", status_code=303)
-        response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
 
+        # 設置多種 cookie 格式以增加兼容性
+        response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True, samesite="lax", max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+
+        # 另外設置一個純 token cookie，某些客戶端可能需要
+        response.set_cookie(key="token", value=access_token, httponly=True, samesite="lax", max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+
+        logger.info("已設置身份認證 cookie 並重定向到聊天頁面")
         return response
     except Exception as e:
         # 捕捉並記錄所有例外
@@ -105,29 +113,68 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
             logger.error(f"用戶資料: {user['id']} / {user['email']}")
             raise HTTPException(status_code=500, detail="登入過程發生錯誤，請稍後再試")
 
+    # 生成訪問 token
     access_token = create_access_token(data={"sub": user["id"]})
+    logger.info(f"用戶 {user['id']} 登入成功，生成訪問令牌")
 
-    # 修改為重定向到聊天頁面
+    # 設定 cookie 和 session
     response = RedirectResponse(url="/chat", status_code=303)
-    response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
 
+    # 設置多種 cookie 格式以增加兼容性
+    response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True, samesite="lax", max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+
+    # 另外設置一個純 token cookie，某些客戶端可能需要
+    response.set_cookie(key="token", value=access_token, httponly=True, samesite="lax", max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+
+    logger.info("已設置身份認證 cookie 並重定向到聊天頁面")
     return response
 
 
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Cookie, Header
+from fastapi.security import OAuth2PasswordBearer, HTTPBearer, HTTPAuthorizationCredentials
+from typing import Optional
 
+# 使用正確的 tokenUrl
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
+# 自訂 token 獲取函數，支援從 cookie 中讀取 token
+security = HTTPBearer()
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
+
+async def get_token_from_cookie_or_header(authorization: Optional[str] = Header(None), access_token: Optional[str] = Cookie(None)):
+    # 嘗試從 header 或 cookie 中獲取 token
+    if authorization:
+        return authorization.split(" ")[1]
+    elif access_token and access_token.startswith("Bearer "):
+        return access_token.split(" ")[1]
+    elif access_token:  # 純 token 無 Bearer 前綴
+        return access_token
+    return None
+
+
+def get_current_user(token: Optional[str] = Depends(get_token_from_cookie_or_header)) -> str:
+    if token is None:
+        logger.error("無法獲取 Token: 請求中沒有提供授權信息")
+        raise HTTPException(
+            status_code=401,
+            detail="未提供認證信息",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     try:
+        logger.info(f"驗證用戶 Token: {token[:10]}...")  # 只記錄前10個字元，保護隱私
         payload: dict = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None:
+            logger.warning("Token 無效: sub 欄位不存在")
             raise HTTPException(status_code=401, detail="無效 token")
+        logger.info(f"用戶 {user_id} 成功通過驗證")
         return str(user_id)
-    except JWTError:
+    except JWTError as e:
+        logger.error(f"Token 驗證失敗: {str(e)}")
         raise HTTPException(status_code=401, detail="token 驗證失敗")
+    except Exception as e:
+        logger.error(f"Token 處理過程中發生未知錯誤: {str(e)}")
+        raise HTTPException(status_code=500, detail="伺服器錯誤")
 
 
 @router.get("/login", response_class=HTMLResponse, name="login")
@@ -138,3 +185,11 @@ async def login_page(request: Request):
 @router.get("/register", response_class=HTMLResponse, name="register")
 async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
+
+
+@router.get("/auth-status")
+async def auth_status(user_id: Optional[str] = Depends(get_current_user)):
+    """檢查當前認證狀態，對調試很有幫助"""
+    if user_id:
+        return {"status": "authenticated", "user_id": user_id}
+    return {"status": "not authenticated"}

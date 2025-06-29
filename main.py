@@ -16,9 +16,10 @@ templates = Jinja2Templates(directory="app/templates")
 initialize_vectordb()
 
 # 註冊 router（原本 Flask 的 blueprint）
-app.include_router(chat_router)
-app.include_router(auth_router)
-app.include_router(schedule_router)
+# 設定明確的路徑前綴以避免路由衝突
+app.include_router(auth_router, prefix="", tags=["auth"])
+app.include_router(chat_router, prefix="", tags=["chat"])
+app.include_router(schedule_router, prefix="", tags=["schedule"])
 
 
 # 首頁導向登入
