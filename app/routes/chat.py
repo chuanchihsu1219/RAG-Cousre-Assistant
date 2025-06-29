@@ -21,7 +21,7 @@ async def chat_get(request: Request, user_id: str = Depends(get_current_user)):
 
     # 抓過往聊天紀錄
     chat_history = []
-    response = supabase.table("chat_history").select("*").eq("user_id", user_id).order("created_at").execute()
+    response = supabase.table("chat_history").select("*").eq("user_id", user_id).order("timestamp").execute()
     if response.data:
         for chat in response.data:
             chat_history.append({"user": chat["user_input"], "bot": chat["bot_reply"]})
