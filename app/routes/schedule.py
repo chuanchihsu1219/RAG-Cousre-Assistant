@@ -1,55 +1,42 @@
 # app/routes/schedule.py
-from flask import Blueprint, render_template, request, session, redirect, url_for, flash
+from fastapi import APIRouter, Request, Form, Depends
+from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
+from app.routes.auth import get_current_user
 from config import supabase
 
-schedule_bp = Blueprint("schedule", __name__)
+router = APIRouter()
+templates = Jinja2Templates(directory="app/templates")
 
 
-@schedule_bp.route("/schedule", methods=["GET", "POST"])
-def schedule():
-    user_id = session.get("user_id")
-    if not user_id:
-        flash("請先登入")
-        return redirect(url_for("auth.login"))
+@router.get("/schedule")
+async def get_schedule(request: Request, user_id: str = Depends(get_current_user)):
+    response = supabase.table("preferences").select("slots").eq("user_id", user_id).execute()
+    selected = response.data[0]["slots"] if response.data else []
 
-    selected = []
+    return templates.TemplateResponse("schedule.html", {"request": request, "selected_slots": selected})
 
-    if request.method == "POST":
-        selected = request.form.getlist("timeslot")
-        session["schedule"] = selected
 
-        payload = {"slots": selected}
-        response = supabase.table("preferences").select("id").eq("user_id", user_id).execute()
+@router.post("/schedule")
+async def post_schedule(request: Request, timeslot: list[str] = Form(...), user_id: str = Depends(get_current_user)):
+    payload: dict[str, list[str] | str] = {"slots": timeslot}
+    response = supabase.table("preferences").select("id").eq("user_id", user_id).execute()
 
-        if response.data:
-            supabase.table("preferences").update(payload).eq("user_id", user_id).execute()
-        else:
-            payload["user_id"] = user_id
-            supabase.table("preferences").insert(payload).execute()
-
-        flash("時間偏好已儲存！")
-        return redirect(url_for("schedule.schedule"))  # ← ★ Redirect 回 GET！
-
+    if response.data:
+        supabase.table("preferences").update(payload).eq("user_id", user_id).execute()
     else:
-        response = supabase.table("preferences").select("slots").eq("user_id", user_id).execute()
-        selected = response.data[0]["slots"] if response.data else []
-        session["schedule"] = selected
-    import inspect
-    print("🔍 使用中的 schedule.html 來源：", inspect.getfile(inspect.currentframe()))
+        payload["user_id"] = user_id
+        supabase.table("preferences").insert(payload).execute()
 
-    return render_template("schedule.html", selected_slots=selected)
+    # 導回 GET /schedule
+    return RedirectResponse("/schedule", status_code=303)
 
-from flask import jsonify, request, session
-import traceback
 
-@schedule_bp.route("/save_schedule", methods=["POST"])
-def save_schedule():
+@router.post("/save_schedule")
+async def save_schedule_json(request: Request, user_id: str = Depends(get_current_user)):
     try:
-        user_id = session.get("user_id")
-        if not user_id:
-            return jsonify(success=False, message="未登入"), 401
-
-        slots = request.json.get("slots", [])
+        data = await request.json()
+        slots = data.get("slots", [])
         print("🔧 收到 slots:", slots)
 
         payload = {"slots": slots}
@@ -61,13 +48,11 @@ def save_schedule():
             payload["user_id"] = user_id
             supabase.table("preferences").insert(payload).execute()
 
-        session["schedule"] = slots
-        return jsonify(success=True)
+        return JSONResponse({"success": True})
 
     except Exception as e:
         import traceback
+
         print("❌ 錯誤發生：", e)
         traceback.print_exc()
-        return jsonify(success=False, message="伺服器錯誤"), 500
-
-
+        return JSONResponse({"success": False, "message": "伺服器錯誤"}, status_code=500)

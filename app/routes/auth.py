@@ -1,64 +1,70 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from werkzeug.security import generate_password_hash, check_password_hash
+# app/routes/auth.py
+from fastapi import APIRouter, Form, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from jose import JWTError, jwt
+from datetime import datetime, timedelta, timezone
+from passlib.context import CryptContext
+import uuid
 from config import supabase
 
-import uuid
+router = APIRouter()
 
-auth_bp = Blueprint("auth", __name__)
+# 加密 & JWT 設定
+SECRET_KEY = "your_secret_key" #Todo
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 天
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-@auth_bp.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = str(request.form.get("password"))
 
-        # 檢查是否已存在
-        existing = supabase.table("users").select("*").eq("email", email).execute().data
-        if existing:
-            flash("帳號已存在，請使用其他 Email 或登入。")
-            return redirect(url_for("auth.register"))
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-        # 建立帳號
-        hash_pw = generate_password_hash(password)
-        user_id = str(uuid.uuid4())
-        supabase.table("users").insert({
-            "id": user_id,
-            "email": email,
-            "password_hash": hash_pw
-        }).execute()
 
-        session["user_id"] = user_id
-        session["email"] = email
-        flash("註冊成功！")
-        return redirect(url_for("chat.chat"))
+@router.post("/register")
+def register(email: str = Form(...), password: str = Form(...)):
+    existing = supabase.table("users").select("*").eq("email", email).execute().data
+    if existing:
+        raise HTTPException(status_code=400, detail="帳號已存在")
 
-    return render_template("register.html")
+    user_id = str(uuid.uuid4())
+    hashed_pw = pwd_context.hash(password)
+    supabase.table("users").insert({"id": user_id, "email": email, "password_hash": hashed_pw}).execute()
 
-@auth_bp.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = str(request.form.get("password"))
+    access_token = create_access_token(data={"sub": user_id})
+    return JSONResponse({"access_token": access_token, "token_type": "bearer"})
 
-        user_data = supabase.table("users").select("*").eq("email", email).execute().data
-        if not user_data:
-            flash("帳號不存在。請先註冊。")
-            return redirect(url_for("auth.login"))
 
-        user = user_data[0]
-        if not check_password_hash(user["password_hash"], password):
-            flash("密碼錯誤。請再試一次。")
-            return redirect(url_for("auth.login"))
+@router.post("/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    email = form_data.username
+    password = form_data.password
 
-        session["user_id"] = user["id"]
-        session["email"] = user["email"]
-        flash("登入成功！")
-        return redirect(url_for("chat.chat"))
+    user_data = supabase.table("users").select("*").eq("email", email).execute().data
+    if not user_data:
+        raise HTTPException(status_code=400, detail="帳號不存在")
 
-    return render_template("login.html")
+    user = user_data[0]
+    if not pwd_context.verify(password, user["password_hash"]):
+        raise HTTPException(status_code=400, detail="密碼錯誤")
 
-@auth_bp.route("/logout")
-def logout():
-    session.clear()
-    flash("已登出。")
-    return redirect(url_for("auth.login"))
+    access_token = create_access_token(data={"sub": user["id"]})
+    return JSONResponse({"access_token": access_token, "token_type": "bearer"})
+
+from fastapi.security import OAuth2PasswordBearer
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+
+
+def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
+    try:
+        payload: dict = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="無效 token")
+        return str(user_id)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="token 驗證失敗")

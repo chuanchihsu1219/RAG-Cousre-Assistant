@@ -1,60 +1,53 @@
 # app/routes/chat.py
-from flask import Blueprint, render_template, request, session, redirect, url_for, flash, jsonify
-from config import supabase
+from fastapi import APIRouter, Request, Form, Depends
+from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.exceptions import RequestValidationError
 from app.utils.rag_chain import recommend_course
+from config import supabase
+from app.routes.auth import get_current_user
 
-chat_bp = Blueprint("chat", __name__)
+router = APIRouter()
+templates = Jinja2Templates(directory="app/templates")
 
-@chat_bp.route("/chat", methods=["GET", "POST"])
-def chat():
-    if "user_id" not in session:
-        flash("請先登入")
-        return redirect(url_for("auth.login"))
 
-    user_id = session["user_id"]
-    chat_history = session.get("chat_history", [])
-
-    # 讀取 schedule（供 checkbox 回填）
+@router.get("/chat")
+async def chat_get(request: Request, user_id: str = Depends(get_current_user)):
+    # 抓勾選的時段
     selected = []
     response = supabase.table("preferences").select("slots").eq("user_id", user_id).execute()
     if response.data:
         selected = response.data[0]["slots"]
-        session["schedule"] = selected
 
-    if request.method == "POST":
-        # 若是 JSON 請求（AJAX）
-        if request.is_json:
-            data = request.get_json()
-            user_input = data.get("user_input", "")
-            schedule = session.get("schedule", [])
-            answer = recommend_course(user_input, schedule)
+    # 抓過往聊天紀錄（你可選擇是否實作從 DB 讀）
+    chat_history = [] #Todo
 
-            supabase.table("chat_history").insert({
-                "user_id": user_id,
-                "user_input": user_input,
-                "bot_reply": answer,
-                "used_slots": schedule
-            }).execute()
+    return templates.TemplateResponse("chat.html", {"request": request, "chat_history": chat_history, "selected_slots": selected})
 
-            chat_history.append({"user": user_input, "bot": answer})
-            session["chat_history"] = chat_history
 
-            return jsonify({"answer": answer})
+@router.post("/chat")
+async def chat_post(request: Request, user_input: str = Form(None), user_id: str = Depends(get_current_user)):  # 若為 JSON 請求此值為 None
+    # 取得勾選的時段
+    selected = []
+    response = supabase.table("preferences").select("slots").eq("user_id", user_id).execute()
+    if response.data:
+        selected = response.data[0]["slots"]
 
-        # 否則為一般表單提交
-        user_input = request.form.get("user_input", "")
-        schedule = session.get("schedule", [])
+    # 若為 JSON 請求（AJAX）
+    if request.headers.get("content-type", "").startswith("application/json"):
+        data = await request.json()
+        user_input = data.get("user_input", "")
 
-        answer = recommend_course(user_input, schedule)
+    # 推薦邏輯
+    answer = recommend_course(user_input, selected)
 
-        supabase.table("chat_history").insert({
-            "user_id": user_id,
-            "user_input": user_input,
-            "bot_reply": answer,
-            "used_slots": schedule
-        }).execute()
+    # 寫入聊天紀錄
+    supabase.table("chat_history").insert({"user_id": user_id, "user_input": user_input, "bot_reply": answer, "used_slots": selected}).execute()
 
-        chat_history.append({"user": user_input, "bot": answer})
-        session["chat_history"] = chat_history
+    # AJAX 回應
+    if request.headers.get("content-type", "").startswith("application/json"):
+        return JSONResponse({"answer": answer})
 
-    return render_template("chat.html", chat_history=chat_history, selected_slots=selected)
+    # 表單回應 → 回傳單筆紀錄
+    chat_history = [{"user": user_input, "bot": answer}]
+    return templates.TemplateResponse("chat.html", {"request": request, "chat_history": chat_history, "selected_slots": selected})

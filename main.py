@@ -1,31 +1,35 @@
-# main.py
-from flask import Flask, redirect, url_for
-from app.routes.chat import chat_bp
-from app.routes.auth import auth_bp
-from app.routes.schedule import schedule_bp
+# main.py (FastAPI 版本)
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+
+from app.routes.chat import router as chat_router
+from app.routes.auth import router as auth_router
+from app.routes.schedule import router as schedule_router
 from app.utils.rag_chain import initialize_vectordb, recommend_course
 
-app = Flask(__name__, template_folder="app/templates")
-app.secret_key = "your_secret"
+# 建立 FastAPI app
+app = FastAPI()
+templates = Jinja2Templates(directory="app/templates")
 
-# 註冊所有藍圖（順序無關，但需明確 import）
-app.register_blueprint(chat_bp)
-app.register_blueprint(auth_bp)
-app.register_blueprint(schedule_bp)
-
+# 向量資料庫初始化
 initialize_vectordb()
 
-@app.route("/")
+# 註冊 router（原本 Flask 的 blueprint）
+app.include_router(chat_router)
+app.include_router(auth_router)
+app.include_router(schedule_router)
+
+
+# 首頁導向登入
+@app.get("/")
 def index():
-    return redirect(url_for("auth.login"))
+    return RedirectResponse(url="/login")
 
 
-@app.route("/ping")
+# ping 測試向量庫
+@app.get("/ping")
 def ping():
     print("📥 Ping 被呼叫，測試向量庫")
     recommend_course("英文", ["2_2", "2_3", "2_4"])
-    return "OK"
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    return {"status": "ok"}
