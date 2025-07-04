@@ -62,6 +62,7 @@ def initialize_vectordb():
     _initialized = True
     # list_collections("persist")  # 可保留做 sanity check
 
+    #Todo: Check why sometimes the directory exists
     if  os.path.exists(CHROMA_LOCAL_DIR):
         os.remove(CHROMA_LOCAL_DIR)
     download_and_extract_chroma_data(container_name=BLOB_CONTAINER_NAME, blob_name=BLOB_FILE_NAME, download_dir=CHROMA_LOCAL_DIR, connection_string=BLOB_CONNECTION_STRING)
